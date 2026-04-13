@@ -1,1110 +1,320 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>I-DLM: Introspective Diffusion Language Models</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
-      onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"
-    ></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
     <style>
-      :root {
-        --bg: #fff;
-        --bg2: #f5f6f8;
-        --bg3: #ebedf0;
-        --text: #1a1a1a;
-        --text2: #444;
-        --text3: #888;
-        --accent: #1a73e8;
-        --accent-bg: rgba(26, 115, 232, 0.05);
-        --purple: #7563b0;
-        --orange: #c55a11;
-        --red: #d93025;
-        --green: #1a8a3f;
-        --border: #d4d4d8;
-        --border-l: #e8e8ed;
-        --r: 12px;
-        --max-w: 840px;
-      }
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      html {
-        scroll-behavior: smooth;
-      }
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
-        color: var(--text);
-        background: var(--bg);
-        font-size: 15px;
-        line-height: 1.72;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      /* ── Top nav ── */
-      .topnav {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: rgba(255, 255, 255, 0.88);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--border-l);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 10px 20px;
-        font-size: 13px;
-      }
-      .topnav .brand {
-        font-weight: 700;
-        font-size: 14px;
-        margin-right: auto;
-        color: var(--text);
-        text-decoration: none;
-      }
-      .topnav a {
-        color: var(--text3);
-        text-decoration: none;
-        padding: 5px 10px;
-        border-radius: 6px;
-        transition: all 0.15s;
-      }
-      .topnav a:hover {
-        color: var(--accent);
-        background: var(--accent-bg);
-      }
-      .topnav a.ext {
-        color: var(--accent);
-        font-weight: 500;
-      }
-
-      /* ── Container ── */
-      .wrap {
-        position: relative;
-        max-width: var(--max-w);
-        margin: 0 auto;
-        padding: 0 24px;
-      }
-      .content {
-        width: 100%;
-        padding: 36px 0 80px;
-      }
-
-      /* ── TOC ── */
-      .toc {
-        position: fixed;
-        top: 60px;
-        left: max(12px, calc((100vw - var(--max-w)) / 2 - 200px));
-        width: 170px;
-        padding-top: 36px;
-      }
-      .toc-label {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.7px;
-        color: var(--text3);
-        margin-bottom: 8px;
-      }
-      .toc a {
-        display: block;
-        padding: 3px 0 3px 10px;
-        font-size: 12px;
-        color: var(--text3);
-        text-decoration: none;
-        border-left: 2px solid transparent;
-        transition: all 0.12s;
-        line-height: 1.35;
-        margin-bottom: 1px;
-      }
-      .toc a:hover {
-        color: var(--accent);
-      }
-      .toc a.active {
-        color: var(--accent);
-        border-left-color: var(--accent);
-        font-weight: 600;
-      }
-
-      /* ── Typography ── */
-      h1 {
-        font-size: 34px;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-        line-height: 1.15;
-        margin-bottom: 10px;
-      }
-      h2 {
-        font-size: 22px;
-        font-weight: 650;
-        margin: 44px 0 12px;
-        padding-top: 10px;
-      }
-      h3 {
-        font-size: 17px;
-        font-weight: 600;
-        margin: 24px 0 8px;
-      }
-      p {
-        color: var(--text2);
-        margin-bottom: 13px;
-      }
-      strong {
-        color: var(--text);
-      }
-      a {
-        color: var(--accent);
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      hr {
-        border: none;
-        border-top: 1px solid var(--border-l);
-        margin: 44px 0;
-      }
-      code {
-        background: var(--bg3);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 12.5px;
-        font-family: "SF Mono", Consolas, monospace;
-      }
-      pre {
-        background: var(--bg2);
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        padding: 16px;
-        overflow-x: auto;
-        font-size: 12.5px;
-        line-height: 1.55;
-        font-family: "SF Mono", Consolas, monospace;
-        color: var(--text2);
-        margin: 14px 0;
-      }
-
-      /* ── Meta ── */
-      .meta {
-        text-align: center;
-        margin-bottom: 24px;
-      }
-      .meta .authors {
-        font-size: 14.5px;
-        color: var(--text2);
-        line-height: 1.85;
-      }
-      .meta .authors a {
-        color: var(--accent);
-      }
-      .meta .affil {
-        font-size: 12.5px;
-        color: var(--text3);
-        margin-top: 3px;
-      }
-      .meta .note {
-        font-size: 11px;
-        color: var(--text3);
-        margin-top: 2px;
-      }
-
-      .pills {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin: 16px 0 24px;
-      }
-      .pills a {
-        padding: 7px 18px;
-        border-radius: 22px;
-        font-size: 13px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: all 0.2s;
-      }
-      .pills a.p {
-        background: var(--accent);
-        color: #fff;
-      }
-      .pills a.p:hover {
-        background: #1557b0;
-        text-decoration: none;
-      }
-      .pills a.s {
-        background: var(--bg2);
-        color: var(--text2);
-        border: 1px solid var(--border);
-      }
-      .pills a.s:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-        text-decoration: none;
-      }
-
-      /* ── Stats ── */
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin: 20px 0;
-      }
-      .stat {
-        background: var(--bg2);
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        padding: 16px 10px;
-        text-align: center;
-      }
-      .stat .v {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--accent);
-      }
-      .stat .l {
-        font-size: 10.5px;
-        color: var(--text3);
-        margin-top: 3px;
-        line-height: 1.3;
-      }
-
-      /* ── Figs ── */
-      .fig {
-        margin: 22px 0;
-        text-align: center;
-      }
-      .fig img {
-        max-width: 100%;
-        border-radius: var(--r);
-      }
-      .fig .cap {
-        font-size: 12.5px;
-        color: var(--text3);
-        margin-top: 8px;
-        text-align: left;
-        line-height: 1.5;
-      }
-      .fig-row {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin: 18px 0;
-      }
-      .fig-row .fig {
-        margin: 0;
-      }
-
-      /* ── Cards ── */
-      .cards {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin: 16px 0;
-      }
-      .card {
-        background: var(--bg2);
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        padding: 16px;
-      }
-      .card h3 {
-        margin: 0 0 5px;
-        font-size: 14px;
-        color: var(--accent);
-      }
-      .card p {
-        font-size: 12.5px;
-        margin: 0;
-      }
-
-      /* ── Callout ── */
-      .callout {
-        background: var(--accent-bg);
-        border-left: 3px solid var(--accent);
-        border-radius: 0 var(--r) var(--r) 0;
-        padding: 13px 16px;
-        margin: 16px 0;
-        font-size: 13.5px;
-        color: var(--text2);
-      }
-      .callout strong {
-        color: var(--accent);
-      }
-
-      /* ── Tables ── */
-      .tw {
-        overflow-x: auto;
-        margin: 14px 0;
-        border-radius: var(--r);
-        border: 1px solid var(--border-l);
-      }
-      table.res {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-      }
-      table.res th {
-        background: var(--bg2);
-        color: var(--text);
-        padding: 8px 5px;
-        font-weight: 600;
-        text-align: center;
-        font-size: 11px;
-        border-bottom: 2px solid var(--border);
-      }
-      table.res td {
-        padding: 5px;
-        text-align: center;
-        border-bottom: 1px solid var(--border-l);
-        color: var(--text2);
-      }
-      table.res .bm {
-        text-align: left;
-        padding-left: 8px;
-        color: var(--text);
-        font-weight: 500;
-      }
-      table.res .cat {
-        text-align: left;
-        padding-left: 8px;
-        font-style: italic;
-        color: var(--text3);
-        background: var(--bg2);
-        font-size: 11px;
-      }
-      table.res .best {
-        color: var(--accent);
-        font-weight: 700;
-      }
-      table.res .sep {
-        border-left: 2.5px solid var(--border);
-      }
-
-      /* ── Interactive ── */
-      .controls {
-        background: var(--bg2);
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        padding: 18px;
-        margin: 16px 0;
-      }
-      .cr {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 8px;
-      }
-      .cr:last-child {
-        margin-bottom: 0;
-      }
-      .cr label {
-        font-weight: 600;
-        min-width: 210px;
-        font-size: 13px;
-        color: var(--text2);
-      }
-      .cr input[type="range"] {
-        flex: 1;
-        height: 4px;
-        -webkit-appearance: none;
-        background: var(--border);
-        border-radius: 2px;
-        outline: none;
-      }
-      .cr input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        background: var(--accent);
-        cursor: pointer;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-      }
-      .cr .v {
-        font-weight: 700;
-        color: var(--accent);
-        min-width: 38px;
-        text-align: right;
-        font-size: 14px;
-      }
-      .presets {
-        display: flex;
-        gap: 5px;
-        margin-top: 6px;
-        flex-wrap: wrap;
-      }
-      .presets button {
-        padding: 3px 11px;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        background: #fff;
-        color: var(--text2);
-        font-size: 11.5px;
-        cursor: pointer;
-        transition: all 0.12s;
-      }
-      .presets button:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-      .presets button.active {
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-      }
-      .cpair {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin: 12px 0;
-      }
-      .cbox {
-        background: var(--bg2);
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        padding: 12px;
-      }
-      canvas {
-        width: 100% !important;
-        height: 300px !important;
-      }
-
-      /* ── Breakdown ── */
-      table.bk {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-        margin: 12px 0;
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        overflow: hidden;
-      }
-      table.bk th {
-        background: var(--bg2);
-        padding: 6px 7px;
-        text-align: center;
-        border-bottom: 2px solid var(--border);
-        font-weight: 600;
-      }
-      table.bk td {
-        padding: 4px 7px;
-        text-align: center;
-        border-bottom: 1px solid var(--border-l);
-        color: var(--text2);
-      }
-      table.bk td:first-child {
-        text-align: left;
-        color: var(--text);
-        font-weight: 500;
-      }
-
-      /* ── Doc section ── */
-      .doc-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin: 16px 0;
-      }
-      .doc-card {
-        background: var(--bg2);
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        padding: 16px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-        color: var(--text);
-        display: block;
-      }
-      .doc-card:hover {
-        border-color: var(--accent);
-        box-shadow: 0 2px 10px rgba(26, 115, 232, 0.08);
-        text-decoration: none;
-      }
-      .doc-card h4 {
-        font-size: 14px;
-        color: var(--accent);
-        margin-bottom: 3px;
-      }
-      .doc-card p {
-        font-size: 12px;
-        margin: 0;
-        color: var(--text3);
-      }
-      .doc-card .tag {
-        display: inline-block;
-        font-size: 9.5px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        padding: 2px 6px;
-        border-radius: 3px;
-        margin-top: 6px;
-      }
-      .doc-card .tag.ready {
-        background: #e6f4ea;
-        color: var(--green);
-      }
-      .doc-card .tag.soon {
-        background: var(--bg3);
-        color: var(--text3);
-      }
-
-      /* ── Doc page (inline expandable) ── */
-      .doc-page {
-        display: none;
-        background: var(--bg2);
-        border: 1px solid var(--border-l);
-        border-radius: var(--r);
-        padding: 24px;
-        margin: 14px 0;
-        animation: fadeIn 0.2s;
-      }
-      .doc-page.open {
-        display: block;
-      }
-      .doc-page h3 {
-        margin-top: 0;
-      }
-      .doc-page .close-btn {
-        float: right;
-        background: none;
-        border: none;
-        font-size: 18px;
-        cursor: pointer;
-        color: var(--text3);
-        padding: 0 4px;
-      }
-      .doc-page .close-btn:hover {
-        color: var(--text);
-      }
-      .placeholder-inner {
-        text-align: center;
-        padding: 24px 0;
-        color: var(--text3);
-      }
-      .placeholder-inner .icon {
-        font-size: 28px;
-        margin-bottom: 6px;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-4px);
+        :root {
+            --bg: #fff; --bg2: #f5f6f8; --bg3: #ebedf0;
+            --text: #1a1a1a; --text2: #444; --text3: #888;
+            --accent: #1a73e8; --accent-bg: rgba(26,115,232,0.05);
+            --purple: #7563B0; --orange: #c55a11; --red: #d93025; --green: #1a8a3f;
+            --border: #d4d4d8; --border-l: #e8e8ed;
+            --r: 12px; --max-w: 840px;
         }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior:smooth; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif; color:var(--text); background:var(--bg); font-size:15px; line-height:1.72; -webkit-font-smoothing:antialiased; }
 
-      /* ── Responsive ── */
-      @media (max-width: 1060px) {
-        .toc {
-          display: none;
+        /* ── Top nav ── */
+        .topnav {
+            position:sticky; top:0; z-index:100;
+            background:rgba(255,255,255,0.88); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+            border-bottom:1px solid var(--border-l);
+            display:flex; align-items:center; justify-content:center; gap:6px;
+            padding:10px 20px; font-size:13px;
         }
-      }
-      @media (max-width: 768px) {
-        .stats {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .cards,
-        .fig-row {
-          grid-template-columns: 1fr;
-        }
-        .cpair {
-          grid-template-columns: 1fr;
-        }
-        h1 {
-          font-size: 26px;
-        }
-        .doc-grid {
-          grid-template-columns: 1fr;
-        }
-        .topnav .hide-sm {
-          display: none;
-        }
-      }
+        .topnav .brand { font-weight:700; font-size:14px; margin-right:auto; color:var(--text); text-decoration:none; }
+        .topnav a { color:var(--text3); text-decoration:none; padding:5px 10px; border-radius:6px; transition:all .15s; }
+        .topnav a:hover { color:var(--accent); background:var(--accent-bg); }
+        .topnav a.ext { color:var(--accent); font-weight:500; }
+
+        /* ── Container ── */
+        .wrap { position:relative; max-width:var(--max-w); margin:0 auto; padding:0 24px; }
+        .content { width:100%; padding:36px 0 80px; }
+
+        /* ── TOC ── */
+        .toc { position:fixed; top:60px; left:max(12px, calc((100vw - var(--max-w)) / 2 - 200px)); width:170px; padding-top:36px; }
+        .toc-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--text3); margin-bottom:8px; }
+        .toc a { display:block; padding:3px 0 3px 10px; font-size:12px; color:var(--text3); text-decoration:none; border-left:2px solid transparent; transition:all .12s; line-height:1.35; margin-bottom:1px; }
+        .toc a:hover { color:var(--accent); }
+        .toc a.active { color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+
+        /* ── Typography ── */
+        h1 { font-size:34px; font-weight:700; letter-spacing:-.5px; line-height:1.15; margin-bottom:10px; }
+        h2 { font-size:22px; font-weight:650; margin:44px 0 12px; padding-top:10px; }
+        h3 { font-size:17px; font-weight:600; margin:24px 0 8px; }
+        p { color:var(--text2); margin-bottom:13px; }
+        strong { color:var(--text); } a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+        hr { border:none; border-top:1px solid var(--border-l); margin:44px 0; }
+        code { background:var(--bg3); padding:2px 6px; border-radius:4px; font-size:12.5px; font-family:'SF Mono',Consolas,monospace; }
+        pre { background:var(--bg2); border:1px solid var(--border-l); border-radius:var(--r); padding:16px; overflow-x:auto; font-size:12.5px; line-height:1.55; font-family:'SF Mono',Consolas,monospace; color:var(--text2); margin:14px 0; }
+
+        /* ── Meta ── */
+        .meta { text-align:center; margin-bottom:24px; }
+        .meta .authors { font-size:14.5px; color:var(--text2); line-height:1.85; }
+        .meta .authors a { color:var(--accent); }
+        .meta .affil { font-size:12.5px; color:var(--text3); margin-top:3px; }
+        .meta .note { font-size:11px; color:var(--text3); margin-top:2px; }
+
+        .pills { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:16px 0 24px; }
+        .pills a { padding:7px 18px; border-radius:22px; font-size:13px; font-weight:500; text-decoration:none; transition:all .2s; }
+        .pills a.p { background:var(--accent); color:#fff; } .pills a.p:hover { background:#1557b0; text-decoration:none; }
+        .pills a.s { background:var(--bg2); color:var(--text2); border:1px solid var(--border); } .pills a.s:hover { border-color:var(--accent); color:var(--accent); text-decoration:none; }
+
+        /* ── Stats ── */
+        .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0; }
+        .stat { background:var(--bg2); border:1px solid var(--border-l); border-radius:var(--r); padding:16px 10px; text-align:center; }
+        .stat .v { font-size:24px; font-weight:700; color:var(--accent); }
+        .stat .l { font-size:10.5px; color:var(--text3); margin-top:3px; line-height:1.3; }
+
+        /* ── Figs ── */
+        .fig { margin:22px 0; text-align:center; }
+        .fig img { max-width:100%; border-radius:var(--r); }
+        .fig .cap { font-size:12.5px; color:var(--text3); margin-top:8px; text-align:left; line-height:1.5; }
+        .fig-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0; }
+        .fig-row .fig { margin:0; }
+
+        /* ── Cards ── */
+        .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; }
+        .card { background:var(--bg2); border:1px solid var(--border-l); border-radius:var(--r); padding:16px; }
+        .card h3 { margin:0 0 5px; font-size:14px; color:var(--accent); }
+        .card p { font-size:12.5px; margin:0; }
+
+        /* ── Callout ── */
+        .callout { background:var(--accent-bg); border-left:3px solid var(--accent); border-radius:0 var(--r) var(--r) 0; padding:13px 16px; margin:16px 0; font-size:13.5px; color:var(--text2); }
+        .callout strong { color:var(--accent); }
+
+        /* ── Tables ── */
+        .tw { overflow-x:auto; margin:14px 0; border-radius:var(--r); border:1px solid var(--border-l); }
+        table.res { width:100%; border-collapse:collapse; font-size:12px; }
+        table.res th { background:var(--bg2); color:var(--text); padding:8px 5px; font-weight:600; text-align:center; font-size:11px; border-bottom:2px solid var(--border); }
+        table.res td { padding:5px; text-align:center; border-bottom:1px solid var(--border-l); color:var(--text2); }
+        table.res .bm { text-align:left; padding-left:8px; color:var(--text); font-weight:500; }
+        table.res .cat { text-align:left; padding-left:8px; font-style:italic; color:var(--text3); background:var(--bg2); font-size:11px; }
+        table.res .best { color:var(--accent); font-weight:700; }
+        table.res .sep { border-left:2.5px solid var(--border); }
+
+        /* ── Interactive ── */
+        .controls { background:var(--bg2); border:1px solid var(--border-l); border-radius:var(--r); padding:18px; margin:16px 0; }
+        .cr { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+        .cr:last-child { margin-bottom:0; }
+        .cr label { font-weight:600; min-width:210px; font-size:13px; color:var(--text2); }
+        .cr input[type=range] { flex:1; height:4px; -webkit-appearance:none; background:var(--border); border-radius:2px; outline:none; }
+        .cr input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+        .cr .v { font-weight:700; color:var(--accent); min-width:38px; text-align:right; font-size:14px; }
+        .presets { display:flex; gap:5px; margin-top:6px; flex-wrap:wrap; }
+        .presets button { padding:3px 11px; border:1px solid var(--border); border-radius:14px; background:#fff; color:var(--text2); font-size:11.5px; cursor:pointer; transition:all .12s; }
+        .presets button:hover { border-color:var(--accent); color:var(--accent); }
+        .presets button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+        .cpair { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0; }
+        .cbox { background:var(--bg2); border:1px solid var(--border-l); border-radius:var(--r); padding:12px; }
+        canvas { width:100%!important; height:300px!important; }
+
+        /* ── Breakdown ── */
+        table.bk { width:100%; border-collapse:collapse; font-size:12px; margin:12px 0; border:1px solid var(--border-l); border-radius:var(--r); overflow:hidden; }
+        table.bk th { background:var(--bg2); padding:6px 7px; text-align:center; border-bottom:2px solid var(--border); font-weight:600; }
+        table.bk td { padding:4px 7px; text-align:center; border-bottom:1px solid var(--border-l); color:var(--text2); }
+        table.bk td:first-child { text-align:left; color:var(--text); font-weight:500; }
+
+        /* ── Doc section ── */
+        .doc-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:16px 0; }
+        .doc-card { background:var(--bg2); border:1px solid var(--border-l); border-radius:var(--r); padding:16px; cursor:pointer; transition:all .2s; text-decoration:none; color:var(--text); display:block; }
+        .doc-card:hover { border-color:var(--accent); box-shadow:0 2px 10px rgba(26,115,232,.08); text-decoration:none; }
+        .doc-card h4 { font-size:14px; color:var(--accent); margin-bottom:3px; }
+        .doc-card p { font-size:12px; margin:0; color:var(--text3); }
+        .doc-card .tag { display:inline-block; font-size:9.5px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; padding:2px 6px; border-radius:3px; margin-top:6px; }
+        .doc-card .tag.ready { background:#e6f4ea; color:var(--green); }
+        .doc-card .tag.soon { background:var(--bg3); color:var(--text3); }
+
+        /* ── Doc page (inline expandable) ── */
+        .doc-page { display:none; background:var(--bg2); border:1px solid var(--border-l); border-radius:var(--r); padding:24px; margin:14px 0; animation:fadeIn .2s; }
+        .doc-page.open { display:block; }
+        .doc-page h3 { margin-top:0; }
+        .doc-page .close-btn { float:right; background:none; border:none; font-size:18px; cursor:pointer; color:var(--text3); padding:0 4px; }
+        .doc-page .close-btn:hover { color:var(--text); }
+        .placeholder-inner { text-align:center; padding:24px 0; color:var(--text3); }
+        .placeholder-inner .icon { font-size:28px; margin-bottom:6px; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── Responsive ── */
+        @media (max-width:1060px) { .toc { display:none; } }
+        @media (max-width:768px) { .stats { grid-template-columns:repeat(2,1fr); } .cards,.fig-row { grid-template-columns:1fr; } .cpair { grid-template-columns:1fr; } h1 { font-size:26px; } .doc-grid { grid-template-columns:1fr; } .topnav .hide-sm { display:none; } }
     </style>
-  </head>
-  <body>
-    <!-- ── Top Nav ── -->
-    <nav class="topnav">
-      <a href="#top" class="brand">I-DLM</a>
-      <a href="#abstract" class="hide-sm">Paper</a>
-      <a href="#results">Results</a>
-      <a href="#speedup">Analysis</a>
-      <a href="#docs">Docs</a>
-      <a href="#citation">Cite</a>
-      <a href="https://huggingface.co/collections/yifanyu/introspective-diffusion-language-models-i-dlm" class="ext">Models &#8599;</a>
-      <a href="https://github.com/togethercomputer/introspective-dlm" class="ext">GitHub &#8599;</a>
-    </nav>
+</head>
+<body>
 
-    <div class="wrap">
-      <!-- TOC -->
-      <div>
-        <div class="toc" id="toc">
-          <div class="toc-label">On this page</div>
-          <a href="#top">Overview</a>
-          <a href="#abstract">Abstract</a>
-          <a href="#bottlenecks">Motivation</a>
-          <a href="#method">Method</a>
-          <a href="#results">Results</a>
-          <a href="#throughput">Throughput</a>
-          <a href="#speedup">Speedup Explorer</a>
-          <a href="#breakdown">Acceptance Table</a>
-          <a href="#docs">Documentation</a>
-          <a href="#citation">Citation</a>
-        </div>
-      </div>
+<!-- ── Top Nav ── -->
+<nav class="topnav">
+    <a href="#top" class="brand">I-DLM</a>
+    <a href="#abstract" class="hide-sm">Paper</a>
+    <a href="#results">Results</a>
+    <a href="#speedup">Analysis</a>
+    <a href="#docs">Docs</a>
+    <a href="#citation">Cite</a>
+    <a href="https://huggingface.co/collections/yifanyu/introspective-diffusion-language-models-i-dlm" class="ext">Models &#8599;</a>
+    <a href="https://github.com/Introspective-Diffusion/I-DLM" class="ext">GitHub &#8599;</a>
+</nav>
 
-      <!-- Content -->
-      <div class="content">
-        <!-- ──── OVERVIEW ──── -->
-        <div id="top" style="text-align: center">
-          <h1>Introspective Diffusion<br />Language Models</h1>
-        </div>
+<div class="wrap">
 
-        <div class="meta">
-          <div class="authors">
-            <a href="https://yifan1130.github.io/">Yifan Yu</a>*, <a href="https://www.linkedin.com/in/yuqing-jian/">Yuqing Jian</a>*,
-            <a href="https://jxiw.github.io/">Junxiong Wang</a>, <a href="https://www.zhongzhuzhou.org/">Zhongzhu Zhou</a>,
-            <a href="https://www.linkedin.com/in/donglin-zhuang/">Donglin Zhuang</a>,
-            <a href="https://www.linkedin.com/in/casper-fang-501679219">Xinyu Fang</a>,
-            <a href="https://www.linkedin.com/in/srivy/">Sri Yanamandra</a>, <a href="https://xwushirley.github.io/">Xiaoxia Wu</a>,
-            <a href="https://qywu.github.io/">Qingyang Wu</a>, <a href="https://shuaiwen-leon-song.github.io/">Shuaiwen Leon Song</a>,
-            <a href="https://tridao.me/">Tri Dao</a>, <a href="https://benathi.github.io/">Ben Athiwaratkun</a>,
-            <a href="https://www.james-zou.com/">James Zou</a>&dagger;, <a href="https://fanlai.me/">Fan Lai</a>&dagger;&loz;,
-            <a href="https://www.chenfengx.com/">Chenfeng Xu</a>&dagger;&loz;
-          </div>
-          <div class="affil">Together AI &bull; UIUC &bull; Princeton &bull; Stanford &bull; UT Austin</div>
-          <div class="note">* Equal contribution &nbsp; &dagger; Equal advising &nbsp; &loz; Corresponding author</div>
-        </div>
+<!-- TOC -->
+<div><div class="toc" id="toc">
+    <div class="toc-label">On this page</div>
+    <a href="#top">Overview</a>
+    <a href="#abstract">Abstract</a>
+    <a href="#bottlenecks">Motivation</a>
+    <a href="#method">Method</a>
+    <a href="#results">Results</a>
+    <a href="#throughput">Throughput</a>
+    <a href="#speedup">Speedup Explorer</a>
+    <a href="#breakdown">Acceptance Table</a>
+    <a href="#docs">Documentation</a>
+    <a href="#citation">Citation</a>
+</div></div>
 
-        <div class="pills">
-          <a href="#" class="p">Paper (arXiv)</a>
-          <a href="https://github.com/togethercomputer/introspective-dlm" class="s">Code</a>
-          <a href="https://huggingface.co/collections/yifanyu/introspective-diffusion-language-models-i-dlm" class="s">Models</a>
-          <a href="#citation" class="s">Cite</a>
-        </div>
+<!-- Content -->
+<div class="content">
 
-        <div class="fig"><img src="static/figures/teaser_combined-1.png" /></div>
+<!-- ──── OVERVIEW ──── -->
+<div id="top" style="text-align:center;"><h1>Introspective Diffusion<br>Language Models</h1></div>
 
-        <div style="margin: 20px 0; border-radius: var(--r); overflow: hidden">
-          <video width="100%" autoplay loop muted playsinline>
-            <source src="static/combined_demo.mp4" type="video/mp4" />
-          </video>
-        </div>
+<div class="meta">
+    <div class="authors"><a href="https://yifan1130.github.io/">Yifan Yu</a>*, <a href="https://www.linkedin.com/in/yuqing-jian/">Yuqing Jian</a>*, <a href="https://jxiw.github.io/">Junxiong Wang</a>, <a href="https://www.zhongzhuzhou.org/">Zhongzhu Zhou</a>, <a href="https://www.linkedin.com/in/donglin-zhuang/">Donglin Zhuang</a>, <a href="https://www.linkedin.com/in/casper-fang-501679219">Xinyu Fang</a>, <a href="https://www.linkedin.com/in/srivy/">Sri Yanamandra</a>, <a href="https://xwushirley.github.io/">Xiaoxia Wu</a>, <a href="https://qywu.github.io/">Qingyang Wu</a>, <a href="https://shuaiwen-leon-song.github.io/">Shuaiwen Leon Song</a>, <a href="https://tridao.me/">Tri Dao</a>, <a href="https://benathi.github.io/">Ben Athiwaratkun</a>, <a href="https://www.james-zou.com/">James Zou</a>&dagger;, <a href="https://fanlai.me/">Fan Lai</a>&dagger;&loz;, <a href="https://www.chenfengx.com/">Chenfeng Xu</a>&dagger;&loz;</div>
+    <div class="affil">Together AI &bull; UIUC &bull; Princeton &bull; Stanford &bull; UT Austin</div>
+    <div class="note">* Equal contribution &nbsp; &dagger; Equal advising &nbsp; &loz; Corresponding author</div>
+</div>
 
-        <div class="stats">
-          <div class="stat">
-            <div class="v">72.5</div>
-            <div class="l">AIME-24 (I-DLM-8B)<br />vs. LLaDA-2.1-mini 43.3</div>
-          </div>
-          <div class="stat">
-            <div class="v">45.1</div>
-            <div class="l">LCB-v6 (I-DLM-8B)<br />vs. LLaDA-2.1-mini 30.4</div>
-          </div>
-          <div class="stat">
-            <div class="v">2.9-4.1x</div>
-            <div class="l">Throughput over<br />LLaDA-2.1-mini at C=64</div>
-          </div>
-          <div class="stat">
-            <div class="v">Lossless</div>
-            <div class="l">Bit-for-bit identical<br />to base AR model</div>
-          </div>
-        </div>
+<div class="pills">
+    <a href="#" class="p">Paper (arXiv)</a>
+    <a href="https://github.com/Introspective-Diffusion/I-DLM" class="s">Code</a>
+    <a href="https://huggingface.co/collections/yifanyu/introspective-diffusion-language-models-i-dlm" class="s">Models</a>
+    <a href="#citation" class="s">Cite</a>
+</div>
 
-        <hr />
+<div class="fig"><img src="static/figures/teaser_combined-1.png"></div>
 
-        <!-- ──── ABSTRACT ──── -->
-        <h2 id="abstract">Abstract</h2>
-        <p>
-          Diffusion language models (DLMs) offer a compelling promise: parallel token generation could break the sequential bottleneck of
-          autoregressive (AR) decoding. Yet in practice, DLMs consistently lag behind AR models in quality.
-        </p>
-        <p>
-          We argue that this gap stems from a fundamental failure of <em>introspective consistency</em>: AR models agree with what they generate,
-          whereas DLMs often do not. We introduce the <strong>Introspective Diffusion Language Model (I-DLM)</strong>, which uses
-          <em>introspective strided decoding (ISD)</em> to verify previously generated tokens while advancing new ones in the same forward pass.
-        </p>
-        <p>
-          Empirically, <strong>I-DLM-8B is the first DLM to match the quality of its same-scale AR counterpart</strong>, outperforming LLaDA-2.1-mini
-          (16B) by <strong>+29</strong> on AIME-24 and <strong>+14</strong> on LiveCodeBench-v6 with half the parameters, while delivering
-          <strong>2.9-4.1x throughput</strong> at high concurrency. With gated LoRA, ISD enables <strong>bit-for-bit lossless</strong> acceleration.
-        </p>
+<div style="margin:20px 0;border-radius:var(--r);overflow:hidden;">
+    <video width="100%" autoplay loop muted playsinline>
+        <source src="static/combined_demo.mp4" type="video/mp4">
+    </video>
+</div>
 
-        <hr />
+<div class="stats">
+    <div class="stat"><div class="v">72.5</div><div class="l">AIME-24 (I-DLM-8B)<br>vs. LLaDA-2.1-mini 43.3</div></div>
+    <div class="stat"><div class="v">45.1</div><div class="l">LCB-v6 (I-DLM-8B)<br>vs. LLaDA-2.1-mini 30.4</div></div>
+    <div class="stat"><div class="v">2.9-4.1x</div><div class="l">Throughput over<br>LLaDA-2.1-mini at C=64</div></div>
+    <div class="stat"><div class="v">Lossless</div><div class="l">Bit-for-bit identical<br>to base AR model</div></div>
+</div>
 
-        <!-- ──── BOTTLENECKS ──── -->
-        <h2 id="bottlenecks">Why Introspective Consistency?</h2>
-        <div class="callout">
-          <strong>Key Insight:</strong> AR training unifies generation and introspection in one forward pass. Existing DLMs miss this &mdash; they
-          learn to denoise but not to introspect.
-        </div>
-        <p>We identify three fundamental bottlenecks in current DLMs:</p>
-        <div class="fig-row">
-          <div class="fig">
-            <img src="static/figures/introspection_rate-1.png" />
-            <div class="cap"><strong>(1) Low introspective consistency.</strong> SDAR: 0.699 vs. I-DLM: 0.984.</div>
-          </div>
-          <div class="fig">
-            <img src="static/figures/compute_overhead_vs_tpf-1.png" />
-            <div class="cap"><strong>(2) Compute inefficiency.</strong> TiDAR: ~7.8x overhead vs. I-DLM: ~2.5x.</div>
-          </div>
-          <div class="fig">
-            <img src="static/figures/batching_efficiency-1.png" />
-            <div class="cap"><strong>(3) Infrastructure mismatch.</strong> SDAR slope=84 vs. I-DLM: 549.</div>
-          </div>
-        </div>
+<hr>
 
-        <hr />
+<!-- ──── ABSTRACT ──── -->
+<h2 id="abstract">Abstract</h2>
+<p>Diffusion language models (DLMs) offer a compelling promise: parallel token generation could break the sequential bottleneck of autoregressive (AR) decoding. Yet in practice, DLMs consistently lag behind AR models in quality.</p>
+<p>We argue that this gap stems from a fundamental failure of <em>introspective consistency</em>: AR models agree with what they generate, whereas DLMs often do not. We introduce the <strong>Introspective Diffusion Language Model (I-DLM)</strong>, which uses <em>introspective strided decoding (ISD)</em> to verify previously generated tokens while advancing new ones in the same forward pass.</p>
+<p>Empirically, <strong>I-DLM-8B is the first DLM to match the quality of its same-scale AR counterpart</strong>, outperforming LLaDA-2.1-mini (16B) by <strong>+29</strong> on AIME-24 and <strong>+14</strong> on LiveCodeBench-v6 with half the parameters, while delivering <strong>2.9-4.1x throughput</strong> at high concurrency. With gated LoRA, ISD enables <strong>bit-for-bit lossless</strong> acceleration.</p>
 
-        <!-- ──── METHOD ──── -->
-        <h2 id="method">The I-DLM Method</h2>
-        <div class="cards">
-          <div class="card">
-            <h3>Introspective-Consistency Training</h3>
-            <p>Convert pretrained AR models via causal attention, logit shift, and an all-masked objective.</p>
-          </div>
-          <div class="card">
-            <h3>Introspective Strided Decoding</h3>
-            <p>Generate N tokens per forward pass while verifying prior tokens via the p/q acceptance criterion.</p>
-          </div>
-          <div class="card">
-            <h3>AR-Compatible Serving</h3>
-            <p>Strict causal attention enables direct integration into SGLang with no custom infrastructure.</p>
-          </div>
-        </div>
-        <div class="fig">
-          <img src="static/figures/comparison_v27-1.png" />
-          <div class="cap"><strong>Decoding paradigm comparison.</strong> I-DLM is a drop-in replacement within AR serving infrastructure.</div>
-        </div>
+<hr>
 
-        <hr />
+<!-- ──── BOTTLENECKS ──── -->
+<h2 id="bottlenecks">Why Introspective Consistency?</h2>
+<div class="callout"><strong>Key Insight:</strong> AR training unifies generation and introspection in one forward pass. Existing DLMs miss this &mdash; they learn to denoise but not to introspect.</div>
+<p>We identify three fundamental bottlenecks in current DLMs:</p>
+<div class="fig-row">
+    <div class="fig"><img src="static/figures/introspection_rate-1.png"><div class="cap"><strong>(1) Low introspective consistency.</strong> SDAR: 0.699 vs. I-DLM: 0.984.</div></div>
+    <div class="fig"><img src="static/figures/compute_overhead_vs_tpf-1.png"><div class="cap"><strong>(2) Compute inefficiency.</strong> TiDAR: ~7.8x overhead vs. I-DLM: ~2.5x.</div></div>
+    <div class="fig"><img src="static/figures/batching_efficiency-1.png"><div class="cap"><strong>(3) Infrastructure mismatch.</strong> SDAR slope=84 vs. I-DLM: 549.</div></div>
+</div>
 
-        <!-- ──── RESULTS ──── -->
-        <h2 id="results">Results</h2>
-        <p>I-DLM is the <strong>first DLM to match same-scale AR quality</strong> while surpassing all prior DLMs across 15 benchmarks.</p>
+<hr>
 
-        <h3>End-to-End Quality</h3>
-        <p style="font-size: 12px; color: var(--text3)">
-          <span style="color: var(--accent)">Blue</span> = best non-AR &lt;30B. <strong>Bold</strong> = best non-AR &lt;100B.
-        </p>
-        <div class="tw">
-          <table class="res">
-            <tr>
-              <th></th>
-              <th>Qwen3<br />8B</th>
-              <th>Qwen3<br />32B</th>
-              <th class="sep">LLaDA-2.1<br />-mini 16B</th>
-              <th>LLaDA-2.0<br />-flash 100B</th>
-              <th>LLaDA-2.1<br />-flash 100B</th>
-              <th>SDAR<br />8B</th>
-              <th>SDAR<br />30B</th>
-              <th>Mercury<br />Coder</th>
-              <th>Gemini<br />Diffusion</th>
-              <th class="sep">I-DLM<br />8B</th>
-              <th>I-DLM<br />32B</th>
-            </tr>
-            <tr>
-              <td colspan="12" class="cat">Knowledge &amp; Reasoning</td>
-            </tr>
-            <tr>
-              <td class="bm">ARC-C</td>
-              <td>95.8</td>
-              <td>97.2</td>
-              <td class="sep">90.2</td>
-              <td>---</td>
-              <td>---</td>
-              <td>91.9</td>
-              <td>93.2</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">95.5</td>
-              <td><strong>96.8</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">MMLU</td>
-              <td>83.5</td>
-              <td>87.2</td>
-              <td class="sep">74.5</td>
-              <td>---</td>
-              <td>---</td>
-              <td>78.6</td>
-              <td>82.8</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">82.4</td>
-              <td><strong>86.8</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">MMLU-Pro</td>
-              <td>75.1</td>
-              <td>80.1</td>
-              <td class="sep">64.8</td>
-              <td>74.8</td>
-              <td>76.6</td>
-              <td>56.9</td>
-              <td>61.5</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">73.1</td>
-              <td><strong>79.7</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">GPQA-D</td>
-              <td>59.0</td>
-              <td>64.1</td>
-              <td class="sep">46.0</td>
-              <td>---</td>
-              <td>---</td>
-              <td>40.2</td>
-              <td>36.7</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">59.1</td>
-              <td><strong>62.1</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">GPQA</td>
-              <td>56.0</td>
-              <td>65.0</td>
-              <td class="sep">53.3</td>
-              <td>62.3</td>
-              <td><strong>67.3</strong></td>
-              <td>---</td>
-              <td>---</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">54.5</td>
-              <td>58.7</td>
-            </tr>
-            <tr>
-              <td colspan="12" class="cat">Math</td>
-            </tr>
-            <tr>
-              <td class="bm">GSM8K</td>
-              <td>96.0</td>
-              <td>94.7</td>
-              <td class="sep">89.0</td>
-              <td>---</td>
-              <td>---</td>
-              <td>91.7</td>
-              <td>91.4</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best"><strong>96.0</strong></td>
-              <td>94.9</td>
-            </tr>
-            <tr>
-              <td class="bm">MATH-500</td>
-              <td>95.8</td>
-              <td>97.8</td>
-              <td class="sep">85.0</td>
-              <td>---</td>
-              <td>---</td>
-              <td>78.6</td>
-              <td>77.8</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">95.8</td>
-              <td><strong>97.6</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">MathBench</td>
-              <td>93.1</td>
-              <td>95.5</td>
-              <td class="sep">84.2</td>
-              <td>---</td>
-              <td>---</td>
-              <td>76.9</td>
-              <td>79.3</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">89.1</td>
-              <td><strong>95.6</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">AIME-24</td>
-              <td>76.7</td>
-              <td>76.7</td>
-              <td class="sep">43.3</td>
-              <td>---</td>
-              <td>---</td>
-              <td>10.0</td>
-              <td>16.7</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">72.5</td>
-              <td><strong>83.3</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">AIME-25</td>
-              <td>60.0</td>
-              <td>80.0</td>
-              <td class="sep">43.3</td>
-              <td>60.0</td>
-              <td>63.3</td>
-              <td>10.0</td>
-              <td>10.8</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">61.0</td>
-              <td><strong>80.0</strong></td>
-            </tr>
-            <tr>
-              <td colspan="12" class="cat">Code</td>
-            </tr>
-            <tr>
-              <td class="bm">HumanEval</td>
-              <td>95.7</td>
-              <td>96.3</td>
-              <td class="sep">86.0</td>
-              <td>---</td>
-              <td>---</td>
-              <td>78.7</td>
-              <td>87.2</td>
-              <td>90.0</td>
-              <td>89.6</td>
-              <td class="sep best">92.7</td>
-              <td><strong>96.3</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">MBPP</td>
-              <td>93.4</td>
-              <td>95.7</td>
-              <td class="sep">82.1</td>
-              <td>---</td>
-              <td>---</td>
-              <td>72.0</td>
-              <td>71.6</td>
-              <td>76.6</td>
-              <td>76.0</td>
-              <td class="sep best">92.8</td>
-              <td><strong>94.6</strong></td>
-            </tr>
-            <tr>
-              <td class="bm">LCB-v6</td>
-              <td>50.3</td>
-              <td>58.3</td>
-              <td class="sep">30.4</td>
-              <td>42.5</td>
-              <td>45.4</td>
-              <td>16.6</td>
-              <td>21.7</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">45.1</td>
-              <td><strong>57.1</strong></td>
-            </tr>
-            <tr>
-              <td colspan="12" class="cat">Instruction Following</td>
-            </tr>
-            <tr>
-              <td class="bm">IFEval</td>
-              <td>84.7</td>
-              <td>84.5</td>
-              <td class="sep">83.2</td>
-              <td>82.6</td>
-              <td>83.6</td>
-              <td>61.4</td>
-              <td>60.6</td>
-              <td>---</td>
-              <td>---</td>
-              <td class="sep best">84.7</td>
-              <td><strong>84.7</strong></td>
-            </tr>
-          </table>
-        </div>
+<!-- ──── METHOD ──── -->
+<h2 id="method">The I-DLM Method</h2>
+<div class="cards">
+    <div class="card"><h3>Introspective-Consistency Training</h3><p>Convert pretrained AR models via causal attention, logit shift, and an all-masked objective.</p></div>
+    <div class="card"><h3>Introspective Strided Decoding</h3><p>Generate N tokens per forward pass while verifying prior tokens via the p/q acceptance criterion.</p></div>
+    <div class="card"><h3>AR-Compatible Serving</h3><p>Strict causal attention enables direct integration into SGLang with no custom infrastructure.</p></div>
+</div>
+<div class="fig"><img src="static/figures/comparison_v27-1.png"><div class="cap"><strong>Decoding paradigm comparison.</strong> I-DLM is a drop-in replacement within AR serving infrastructure.</div></div>
 
-        <h3 id="throughput">Throughput</h3>
-        <div class="fig">
-          <img src="static/figures/throughput_dllm-1.png" style="max-width: 560px" />
-          <div class="cap">
-            <strong>Throughput-latency tradeoff</strong> compared with DLMs across batch sizes (1, 4, 16, 64). I-DLM delivers 2.9-4.1x higher
-            throughput than LLaDA-2.1-mini and SDAR at C=64.
-          </div>
-        </div>
+<hr>
 
-        <hr />
+<!-- ──── RESULTS ──── -->
+<h2 id="results">Results</h2>
+<p>I-DLM is the <strong>first DLM to match same-scale AR quality</strong> while surpassing all prior DLMs across 15 benchmarks.</p>
 
-        <!-- ──── SPEEDUP EXPLORER ──── -->
-        <h2 id="speedup">Speedup Factor Explorer</h2>
-        <p>
-          In the memory-bound decode regime, <strong>TPF closely approximates wall-clock speedup</strong>: a TPF of 2.5 represents roughly 2.5x faster
-          decoding than AR. Explore how acceptance rate and stride size affect this below.
-        </p>
+<h3>End-to-End Quality</h3>
+<p style="font-size:12px;color:var(--text3);"><span style="color:var(--accent);">Blue</span> = best non-AR &lt;30B. <strong>Bold</strong> = best non-AR &lt;100B.</p>
+<div class="tw"><table class="res">
+    <tr><th></th><th>Qwen3<br>8B</th><th>Qwen3<br>32B</th><th class="sep">LLaDA-2.1<br>-mini 16B</th><th>LLaDA-2.0<br>-flash 100B</th><th>LLaDA-2.1<br>-flash 100B</th><th>SDAR<br>8B</th><th>SDAR<br>30B</th><th>Mercury<br>Coder</th><th>Gemini<br>Diffusion</th><th class="sep">I-DLM<br>8B</th><th>I-DLM<br>32B</th></tr>
+    <tr><td colspan="12" class="cat">Knowledge &amp; Reasoning</td></tr>
+    <tr><td class="bm">ARC-C</td><td>95.8</td><td>97.2</td><td class="sep">90.2</td><td>---</td><td>---</td><td>91.9</td><td>93.2</td><td>---</td><td>---</td><td class="sep best">95.5</td><td><strong>96.8</strong></td></tr>
+    <tr><td class="bm">MMLU</td><td>83.5</td><td>87.2</td><td class="sep">74.5</td><td>---</td><td>---</td><td>78.6</td><td>82.8</td><td>---</td><td>---</td><td class="sep best">82.4</td><td><strong>86.8</strong></td></tr>
+    <tr><td class="bm">MMLU-Pro</td><td>75.1</td><td>80.1</td><td class="sep">64.8</td><td>74.8</td><td>76.6</td><td>56.9</td><td>61.5</td><td>---</td><td>---</td><td class="sep best">73.1</td><td><strong>79.7</strong></td></tr>
+    <tr><td class="bm">GPQA-D</td><td>59.0</td><td>64.1</td><td class="sep">46.0</td><td>---</td><td>---</td><td>40.2</td><td>36.7</td><td>---</td><td>---</td><td class="sep best">59.1</td><td><strong>62.1</strong></td></tr>
+    <tr><td class="bm">GPQA</td><td>56.0</td><td>65.0</td><td class="sep">53.3</td><td>62.3</td><td><strong>67.3</strong></td><td>---</td><td>---</td><td>---</td><td>---</td><td class="sep best">54.5</td><td>58.7</td></tr>
+    <tr><td colspan="12" class="cat">Math</td></tr>
+    <tr><td class="bm">GSM8K</td><td>96.0</td><td>94.7</td><td class="sep">89.0</td><td>---</td><td>---</td><td>91.7</td><td>91.4</td><td>---</td><td>---</td><td class="sep best"><strong>96.0</strong></td><td>94.9</td></tr>
+    <tr><td class="bm">MATH-500</td><td>95.8</td><td>97.8</td><td class="sep">85.0</td><td>---</td><td>---</td><td>78.6</td><td>77.8</td><td>---</td><td>---</td><td class="sep best">95.8</td><td><strong>97.6</strong></td></tr>
+    <tr><td class="bm">MathBench</td><td>93.1</td><td>95.5</td><td class="sep">84.2</td><td>---</td><td>---</td><td>76.9</td><td>79.3</td><td>---</td><td>---</td><td class="sep best">89.1</td><td><strong>95.6</strong></td></tr>
+    <tr><td class="bm">AIME-24</td><td>76.7</td><td>76.7</td><td class="sep">43.3</td><td>---</td><td>---</td><td>10.0</td><td>16.7</td><td>---</td><td>---</td><td class="sep best">72.5</td><td><strong>83.3</strong></td></tr>
+    <tr><td class="bm">AIME-25</td><td>60.0</td><td>80.0</td><td class="sep">43.3</td><td>60.0</td><td>63.3</td><td>10.0</td><td>10.8</td><td>---</td><td>---</td><td class="sep best">61.0</td><td><strong>80.0</strong></td></tr>
+    <tr><td colspan="12" class="cat">Code</td></tr>
+    <tr><td class="bm">HumanEval</td><td>95.7</td><td>96.3</td><td class="sep">86.0</td><td>---</td><td>---</td><td>78.7</td><td>87.2</td><td>90.0</td><td>89.6</td><td class="sep best">92.7</td><td><strong>96.3</strong></td></tr>
+    <tr><td class="bm">MBPP</td><td>93.4</td><td>95.7</td><td class="sep">82.1</td><td>---</td><td>---</td><td>72.0</td><td>71.6</td><td>76.6</td><td>76.0</td><td class="sep best">92.8</td><td><strong>94.6</strong></td></tr>
+    <tr><td class="bm">LCB-v6</td><td>50.3</td><td>58.3</td><td class="sep">30.4</td><td>42.5</td><td>45.4</td><td>16.6</td><td>21.7</td><td>---</td><td>---</td><td class="sep best">45.1</td><td><strong>57.1</strong></td></tr>
+    <tr><td colspan="12" class="cat">Instruction Following</td></tr>
+    <tr><td class="bm">IFEval</td><td>84.7</td><td>84.5</td><td class="sep">83.2</td><td>82.6</td><td>83.6</td><td>61.4</td><td>60.6</td><td>---</td><td>---</td><td class="sep best">84.7</td><td><strong>84.7</strong></td></tr>
+</table></div>
 
-        <div class="controls">
-          <div class="cr">
-            <label>I-DLM acceptance rate (<em>p</em>):</label><input type="range" id="pSlider" min="0" max="100" value="90" step="1" /><span
-              class="v"
-              id="pValue"
-              >0.90</span
-            >
-          </div>
-          <div class="presets">
-            <button onclick="setP(70)">0.70</button><button onclick="setP(80)">0.80</button><button onclick="setP(85)">0.85</button
-            ><button onclick="setP(90)" class="active">0.90</button><button onclick="setP(95)">0.95</button><button onclick="setP(100)">1.00</button>
-          </div>
-          <div class="cr" style="margin-top: 12px">
-            <label>R-ISD LoRA overhead (<em>&alpha;</em>):</label><input type="range" id="loraSlider" min="100" max="150" value="112" step="1" /><span
-              class="v"
-              id="loraValue"
-              >1.12</span
-            >
-          </div>
-          <p style="font-size: 11px; color: var(--text3); margin: 3px 0 0">
-            Gated LoRA adds compute at MASK positions for bit-for-bit lossless output. &alpha;=1.12 matches empirical overhead.
-          </p>
-          <!-- [COMMENTED OUT] SDAR slider — uncomment to show SDAR with independent acceptance rate
+<h3 id="throughput">Throughput</h3>
+<div class="fig"><img src="static/figures/throughput_dllm-1.png" style="max-width:560px;"><div class="cap"><strong>Throughput-latency tradeoff</strong> compared with DLMs across batch sizes (1, 4, 16, 64). I-DLM delivers 2.9-4.1x higher throughput than LLaDA-2.1-mini and SDAR at C=64.</div></div>
+
+<hr>
+
+<!-- ──── SPEEDUP EXPLORER ──── -->
+<h2 id="speedup">Speedup Factor Explorer</h2>
+<p>In the memory-bound decode regime, <strong>TPF closely approximates wall-clock speedup</strong>: a TPF of 2.5 represents roughly 2.5x faster decoding than AR. Explore how acceptance rate and stride size affect this below.</p>
+
+<div class="controls">
+    <div class="cr"><label>I-DLM acceptance rate (<em>p</em>):</label><input type="range" id="pSlider" min="0" max="100" value="90" step="1"><span class="v" id="pValue">0.90</span></div>
+    <div class="presets">
+        <button onclick="setP(70)">0.70</button><button onclick="setP(80)">0.80</button><button onclick="setP(85)">0.85</button><button onclick="setP(90)" class="active">0.90</button><button onclick="setP(95)">0.95</button><button onclick="setP(100)">1.00</button>
+    </div>
+    <div class="cr" style="margin-top:12px;"><label>R-ISD LoRA overhead (<em>&alpha;</em>):</label><input type="range" id="loraSlider" min="100" max="150" value="112" step="1"><span class="v" id="loraValue">1.12</span></div>
+    <p style="font-size:11px;color:var(--text3);margin:3px 0 0;">Gated LoRA adds compute at MASK positions for bit-for-bit lossless output. &alpha;=1.12 matches empirical overhead.</p>
+    <!-- [COMMENTED OUT] SDAR slider — uncomment to show SDAR with independent acceptance rate
     <div class="cr" style="margin-top:14px;border-top:1px solid var(--border-l);padding-top:14px;"><label>SDAR acceptance rate (<em>p<sub>sdar</sub></em>):</label><input type="range" id="sdarSlider" min="0" max="100" value="50" step="1"><span class="v" id="sdarValue">0.50</span></div>
     <p style="font-size:11px;color:var(--text3);margin:3px 0 0;">SDAR uses confidence-based denoising with typically lower per-token acceptance rates than ISD.</p>
     -->
-          <!-- Hidden SDAR slider for JS compatibility -->
-          <input type="hidden" id="sdarSlider" value="50" />
-          <span id="sdarValue" style="display: none">0.50</span>
-        </div>
+    <!-- Hidden SDAR slider for JS compatibility -->
+    <input type="hidden" id="sdarSlider" value="50">
+    <span id="sdarValue" style="display:none;">0.50</span>
+</div>
 
-        <div class="stats" id="tpfStats">
-          <div class="stat">
-            <div class="v" id="tpfN2">--</div>
-            <div class="l">N=2</div>
-          </div>
-          <div class="stat">
-            <div class="v" id="tpfN3">--</div>
-            <div class="l">N=3</div>
-          </div>
-          <div class="stat">
-            <div class="v" id="tpfN4">--</div>
-            <div class="l">N=4</div>
-          </div>
-          <div class="stat">
-            <div class="v" id="tpfN8">--</div>
-            <div class="l">N=8</div>
-          </div>
-        </div>
+<div class="stats" id="tpfStats">
+    <div class="stat"><div class="v" id="tpfN2">--</div><div class="l">N=2</div></div>
+    <div class="stat"><div class="v" id="tpfN3">--</div><div class="l">N=3</div></div>
+    <div class="stat"><div class="v" id="tpfN4">--</div><div class="l">N=4</div></div>
+    <div class="stat"><div class="v" id="tpfN8">--</div><div class="l">N=8</div></div>
+</div>
 
-        <!-- [COMMENTED OUT] Memory-bound header — uncomment if showing both regimes
+<!-- [COMMENTED OUT] Memory-bound header — uncomment if showing both regimes
 <h3>Memory-Bound Regime (Low Concurrency)</h3>
 <p style="font-size:13px;color:var(--text3);">Speedup &asymp; TPF. Forward pass latency is roughly constant regardless of token count.</p>
 -->
-        <div class="cpair">
-          <div class="cbox"><canvas id="tpfChart"></canvas></div>
-          <div class="cbox"><canvas id="acceptedChart"></canvas></div>
-        </div>
+<div class="cpair">
+    <div class="cbox"><canvas id="tpfChart"></canvas></div>
+    <div class="cbox"><canvas id="acceptedChart"></canvas></div>
+</div>
 
-        <!-- [COMMENTED OUT] Compute-bound regime section — includes batch size slider, efficiency chart, and derivation.
+<!-- [COMMENTED OUT] Compute-bound regime section — includes batch size slider, efficiency chart, and derivation.
      To re-enable: uncomment this block AND the effChart/bszSlider JS in the script section.
      Also uncomment the SDAR slider above and the SDAR dataset in the TPF chart.
 
@@ -1117,22 +327,22 @@
 <p style="font-size:13px;color:var(--text3);">Speedup = TPF&sup2; / query_size. Captures: (1) more tokens per forward, (2) fewer forwards needed, (3) query cost per forward. Speedup &gt; 1 = fewer total FLOPs than AR.</p>
 <div class="cbox" style="margin:12px 0;"><canvas id="effChart"></canvas></div>
 -->
-        <!-- Hidden elements for JS compatibility -->
-        <input type="hidden" id="bszSlider" value="0" />
-        <span id="bszValue" style="display: none">1</span>
+<!-- Hidden elements for JS compatibility -->
+<input type="hidden" id="bszSlider" value="0">
+<span id="bszValue" style="display:none;">1</span>
 
-        <div class="callout">
-          <strong>Memory-bound:</strong> <code>Speedup &asymp; TPF = (2+p+...+p<sup>N-2</sup>) / (2-p<sup>N-1</sup>)</code><br />
-          <strong>R-ISD (lossless):</strong> <code>Speedup &asymp; TPF / &alpha;</code> &mdash; gated LoRA guarantees bit-for-bit AR output.
-          <!-- [COMMENTED OUT] Compute-bound formulas and derivation toggle
+<div class="callout">
+    <strong>Memory-bound:</strong> <code>Speedup &asymp; TPF = (2+p+...+p<sup>N-2</sup>) / (2-p<sup>N-1</sup>)</code><br>
+    <strong>R-ISD (lossless):</strong> <code>Speedup &asymp; TPF / &alpha;</code> &mdash; gated LoRA guarantees bit-for-bit AR output.
+    <!-- [COMMENTED OUT] Compute-bound formulas and derivation toggle
     <br>
     <strong>Compute-bound speedup:</strong> <code>Speedup = TPF&sup2; / query_size = TPF / OH</code>. ISD: <code>TPF&sup2; / (2N-1)</code>. SDAR: <code>TPF&sup2; / N</code>. AR = 1. (Speedup > 1 means fewer total FLOPs than AR for the same output.)
     <br><br>
     <a href="javascript:void(0)" onclick="document.getElementById('derivation').classList.toggle('open')" style="font-size:12.5px;">Show derivation: why TPF&sup2;/query_size = TPF/OH &darr;</a>
     -->
-        </div>
+</div>
 
-        <!-- [COMMENTED OUT] Derivation expandable panel
+<!-- [COMMENTED OUT] Derivation expandable panel
 <div class="doc-page" id="derivation" style="font-size:13.5px; line-height:1.75;">
     <button class="close-btn" onclick="document.getElementById('derivation').classList.toggle('open')">&times;</button>
     <h3 style="margin-bottom:10px;">Derivation: Compute-Bound Efficiency</h3>
@@ -1163,165 +373,51 @@
 </div>
 -->
 
-        <div
-          style="
-            background: var(--bg2);
-            border: 1px solid var(--border-l);
-            border-radius: var(--r);
-            padding: 16px 18px;
-            margin: 18px 0;
-            font-size: 13.5px;
-            line-height: 1.75;
-          "
-        >
-          <strong style="font-size: 14px">How do DLMs perform as they approach compute-bound?</strong>
-          <p style="margin: 8px 0 4px">
-            At high concurrency, forward pass latency scales with query count per forward. We can measure compute efficiency as TPF&sup2;/query_size
-            &mdash; how much useful output each FLOP produces relative to AR (efficiency = 1):
-          </p>
-          <ul style="margin: 6px 0 10px; padding-left: 20px; color: var(--text2)">
-            <li>
-              <strong style="color: var(--orange)">SDAR</strong> (N=4, p=0.5): TPF &asymp; 1.1, processes N=4 queries/forward &rarr; compute
-              efficiency = 1.1&sup2;/4 &asymp; <strong style="color: var(--orange)">0.31</strong>. Each FLOP produces only 31% as much output as AR.
-              This pushes SDAR into compute-bound early, and its throughput plateaus (batching efficiency slope = 84, see motivation figure).
-            </li>
-            <li>
-              <strong style="color: var(--accent)">I-DLM</strong> (N=4, p=0.9): TPF &asymp; 2.9, processes 2N&minus;1=7 queries/forward &rarr; compute
-              efficiency = 2.9&sup2;/7 &asymp; <strong style="color: var(--accent)">1.22</strong>. Each FLOP produces <em>more</em> useful output than
-              AR &mdash; I-DLM stays in the memory-bound regime at concurrency levels where SDAR is already saturated (batching efficiency slope =
-              549).
-            </li>
-          </ul>
-          <p style="margin: 0; color: var(--text3); font-size: 12px">
-            Efficiency &gt; 1 means parallel decoding actually <em>saves</em> total compute vs. AR. This is why I-DLM's throughput scales with
-            concurrency while SDAR and LLaDA plateau in the throughput figure above.
-          </p>
-        </div>
+<div style="background:var(--bg2);border:1px solid var(--border-l);border-radius:var(--r);padding:16px 18px;margin:18px 0;font-size:13.5px;line-height:1.75;">
+    <strong style="font-size:14px;">How do DLMs perform as they approach compute-bound?</strong>
+    <p style="margin:8px 0 4px;">At high concurrency, forward pass latency scales with query count per forward. We can measure compute efficiency as TPF&sup2;/query_size &mdash; how much useful output each FLOP produces relative to AR (efficiency = 1):</p>
+    <ul style="margin:6px 0 10px;padding-left:20px;color:var(--text2);">
+        <li><strong style="color:var(--orange);">SDAR</strong> (N=4, p=0.5): TPF &asymp; 1.1, processes N=4 queries/forward &rarr; compute efficiency = 1.1&sup2;/4 &asymp; <strong style="color:var(--orange);">0.31</strong>. Each FLOP produces only 31% as much output as AR. This pushes SDAR into compute-bound early, and its throughput plateaus (batching efficiency slope = 84, see motivation figure).</li>
+        <li><strong style="color:var(--accent);">I-DLM</strong> (N=4, p=0.9): TPF &asymp; 2.9, processes 2N&minus;1=7 queries/forward &rarr; compute efficiency = 2.9&sup2;/7 &asymp; <strong style="color:var(--accent);">1.22</strong>. Each FLOP produces <em>more</em> useful output than AR &mdash; I-DLM stays in the memory-bound regime at concurrency levels where SDAR is already saturated (batching efficiency slope = 549).</li>
+    </ul>
+    <p style="margin:0;color:var(--text3);font-size:12px;">Efficiency &gt; 1 means parallel decoding actually <em>saves</em> total compute vs. AR. This is why I-DLM's throughput scales with concurrency while SDAR and LLaDA plateau in the throughput figure above.</p>
+</div>
 
-        <h3 id="breakdown">Per-Position Acceptance Breakdown</h3>
-        <p>Acceptance compounds geometrically: position <em>k</em> has probability $p^{k-1}$. Position 1 is always accepted (logit shift).</p>
-        <div id="breakdownContainer"></div>
+<h3 id="breakdown">Per-Position Acceptance Breakdown</h3>
+<p>Acceptance compounds geometrically: position <em>k</em> has probability $p^{k-1}$. Position 1 is always accepted (logit shift).</p>
+<div id="breakdownContainer"></div>
 
-        <hr />
+<hr>
 
-        <!-- ──── DOCS ──── -->
-        <h2 id="docs">Documentation &amp; Resources</h2>
-        <p>Everything you need to train, serve, and deploy I-DLM. Click any card to expand.</p>
+<!-- ──── DOCS ──── -->
+<h2 id="docs">Documentation &amp; Resources</h2>
+<p>Everything you need to train, serve, and deploy I-DLM. Click any card to expand.</p>
 
-        <div class="doc-grid">
-          <a class="doc-card" onclick="toggleDoc('doc-install')"
-            ><h4>Installation</h4>
-            <p>Setup, dependencies, and environment</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-          <a class="doc-card" onclick="toggleDoc('doc-quickstart')"
-            ><h4>Quick Start</h4>
-            <p>Run I-DLM inference in 5 minutes</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-          <a class="doc-card" onclick="toggleDoc('doc-training')"
-            ><h4>Training</h4>
-            <p>Introspective-consistency training recipe</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-          <a class="doc-card" onclick="toggleDoc('doc-inference')"
-            ><h4>Inference &amp; ISD</h4>
-            <p>Strided decoding algorithm and config</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-          <a class="doc-card" onclick="toggleDoc('doc-serving')"
-            ><h4>Serving (SGLang)</h4>
-            <p>Production deployment with SGLang</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-          <a class="doc-card" onclick="toggleDoc('doc-lora')"
-            ><h4>Lossless R-ISD</h4>
-            <p>Gated LoRA for bit-for-bit output</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-          <a class="doc-card" onclick="toggleDoc('doc-api')"
-            ><h4>API Reference</h4>
-            <p>Core APIs and configuration options</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-          <a class="doc-card" onclick="toggleDoc('doc-bench')"
-            ><h4>Benchmarks</h4>
-            <p>Reproduce our evaluations</p>
-            <span class="tag soon">Coming Soon</span></a
-          >
-        </div>
+<div class="doc-grid">
+    <a class="doc-card" onclick="toggleDoc('doc-install')"><h4>Installation</h4><p>Setup, dependencies, and environment</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-quickstart')"><h4>Quick Start</h4><p>Run I-DLM inference in 5 minutes</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-training')"><h4>Training</h4><p>Introspective-consistency training recipe</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-inference')"><h4>Inference &amp; ISD</h4><p>Strided decoding algorithm and config</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-serving')"><h4>Serving (SGLang)</h4><p>Production deployment with SGLang</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-lora')"><h4>Lossless R-ISD</h4><p>Gated LoRA for bit-for-bit output</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-api')"><h4>API Reference</h4><p>Core APIs and configuration options</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-bench')"><h4>Benchmarks</h4><p>Reproduce our evaluations</p><span class="tag soon">Coming Soon</span></a>
+</div>
 
-        <div class="doc-page" id="doc-install">
-          <button class="close-btn" onclick="toggleDoc('doc-install')">&times;</button>
-          <h3>Installation</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#128230;</div>
-            <p>Installation guide coming soon. Star the repo for updates.</p>
-          </div>
-        </div>
-        <div class="doc-page" id="doc-quickstart">
-          <button class="close-btn" onclick="toggleDoc('doc-quickstart')">&times;</button>
-          <h3>Quick Start</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#9889;</div>
-            <p>Quick start tutorial coming soon.</p>
-          </div>
-        </div>
-        <div class="doc-page" id="doc-training">
-          <button class="close-btn" onclick="toggleDoc('doc-training')">&times;</button>
-          <h3>Training</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#128295;</div>
-            <p>Training documentation coming soon.</p>
-          </div>
-        </div>
-        <div class="doc-page" id="doc-inference">
-          <button class="close-btn" onclick="toggleDoc('doc-inference')">&times;</button>
-          <h3>Inference &amp; ISD</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#9654;</div>
-            <p>Inference documentation coming soon.</p>
-          </div>
-        </div>
-        <div class="doc-page" id="doc-serving">
-          <button class="close-btn" onclick="toggleDoc('doc-serving')">&times;</button>
-          <h3>Serving (SGLang)</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#127760;</div>
-            <p>SGLang serving guide coming soon.</p>
-          </div>
-        </div>
-        <div class="doc-page" id="doc-lora">
-          <button class="close-btn" onclick="toggleDoc('doc-lora')">&times;</button>
-          <h3>Lossless R-ISD</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#128274;</div>
-            <p>R-ISD / Gated LoRA documentation coming soon.</p>
-          </div>
-        </div>
-        <div class="doc-page" id="doc-api">
-          <button class="close-btn" onclick="toggleDoc('doc-api')">&times;</button>
-          <h3>API Reference</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#128209;</div>
-            <p>API reference coming soon.</p>
-          </div>
-        </div>
-        <div class="doc-page" id="doc-bench">
-          <button class="close-btn" onclick="toggleDoc('doc-bench')">&times;</button>
-          <h3>Benchmarks</h3>
-          <div class="placeholder-inner">
-            <div class="icon">&#128200;</div>
-            <p>Benchmark reproduction guide coming soon.</p>
-          </div>
-        </div>
+<div class="doc-page" id="doc-install"><button class="close-btn" onclick="toggleDoc('doc-install')">&times;</button><h3>Installation</h3><div class="placeholder-inner"><div class="icon">&#128230;</div><p>Installation guide coming soon. Star the repo for updates.</p></div></div>
+<div class="doc-page" id="doc-quickstart"><button class="close-btn" onclick="toggleDoc('doc-quickstart')">&times;</button><h3>Quick Start</h3><div class="placeholder-inner"><div class="icon">&#9889;</div><p>Quick start tutorial coming soon.</p></div></div>
+<div class="doc-page" id="doc-training"><button class="close-btn" onclick="toggleDoc('doc-training')">&times;</button><h3>Training</h3><div class="placeholder-inner"><div class="icon">&#128295;</div><p>Training documentation coming soon.</p></div></div>
+<div class="doc-page" id="doc-inference"><button class="close-btn" onclick="toggleDoc('doc-inference')">&times;</button><h3>Inference &amp; ISD</h3><div class="placeholder-inner"><div class="icon">&#9654;</div><p>Inference documentation coming soon.</p></div></div>
+<div class="doc-page" id="doc-serving"><button class="close-btn" onclick="toggleDoc('doc-serving')">&times;</button><h3>Serving (SGLang)</h3><div class="placeholder-inner"><div class="icon">&#127760;</div><p>SGLang serving guide coming soon.</p></div></div>
+<div class="doc-page" id="doc-lora"><button class="close-btn" onclick="toggleDoc('doc-lora')">&times;</button><h3>Lossless R-ISD</h3><div class="placeholder-inner"><div class="icon">&#128274;</div><p>R-ISD / Gated LoRA documentation coming soon.</p></div></div>
+<div class="doc-page" id="doc-api"><button class="close-btn" onclick="toggleDoc('doc-api')">&times;</button><h3>API Reference</h3><div class="placeholder-inner"><div class="icon">&#128209;</div><p>API reference coming soon.</p></div></div>
+<div class="doc-page" id="doc-bench"><button class="close-btn" onclick="toggleDoc('doc-bench')">&times;</button><h3>Benchmarks</h3><div class="placeholder-inner"><div class="icon">&#128200;</div><p>Benchmark reproduction guide coming soon.</p></div></div>
 
-        <hr />
+<hr>
 
-        <!-- ──── CITATION ──── -->
-        <h2 id="citation">Citation</h2>
-        <pre>
-@article{yu2025introspective,
+<!-- ──── CITATION ──── -->
+<h2 id="citation">Citation</h2>
+<pre>@article{yu2025introspective,
   title={Introspective Diffusion Language Models},
   author={Yu, Yifan and Jian, Yuqing and Wang, Junxiong and Zhou, Zhongzhu
           and Zhuang, Donglin and Fang, Xinyu and Yanamandra, Sri
@@ -1330,281 +426,102 @@
           and Lai, Fan and Xu, Chenfeng},
   journal={arXiv preprint},
   year={2025}
-}</pre
-        >
+}</pre>
 
-        <div style="text-align: center; margin-top: 40px; font-size: 12px; color: var(--text3)">&copy; 2025 I-DLM Team. Built with care.</div>
-      </div>
-    </div>
+<div style="text-align:center; margin-top:40px; font-size:12px; color:var(--text3);">
+    &copy; 2025 I-DLM Team. Built with care.
+</div>
 
-    <script>
-      // ── TOC tracking ──
-      const tocLinks = document.querySelectorAll(".toc a"),
-        secs = [];
-      tocLinks.forEach((a) => {
-        const id = a.getAttribute("href").replace("#", ""),
-          el = document.getElementById(id);
-        if (el) secs.push({ el, link: a });
-      });
-      window.addEventListener(
-        "scroll",
-        () => {
-          const y = window.scrollY + 80;
-          let c = secs[0];
-          for (const s of secs) if (s.el.offsetTop <= y) c = s;
-          tocLinks.forEach((a) => a.classList.remove("active"));
-          if (c) c.link.classList.add("active");
-        },
-        { passive: true }
-      );
+</div></div>
 
-      // ── Doc toggles ──
-      function toggleDoc(id) {
-        const el = document.getElementById(id);
-        el.classList.toggle("open");
-        if (el.classList.contains("open")) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
+<script>
+// ── TOC tracking ──
+const tocLinks=document.querySelectorAll('.toc a'),secs=[];
+tocLinks.forEach(a=>{const id=a.getAttribute('href').replace('#',''),el=document.getElementById(id);if(el)secs.push({el,link:a});});
+window.addEventListener('scroll',()=>{const y=window.scrollY+80;let c=secs[0];for(const s of secs)if(s.el.offsetTop<=y)c=s;tocLinks.forEach(a=>a.classList.remove('active'));if(c)c.link.classList.add('active');},{passive:true});
 
-      // ── TPF ──
-      function isdTPF(N, p) {
-        if (N <= 1) return 1;
-        let n = 2;
-        for (let k = 1; k <= N - 2; k++) n += Math.pow(p, k);
-        return n / (2 - Math.pow(p, N - 1));
-      }
-      function avgAcc(N, p) {
-        if (N <= 1) return 1;
-        let s = 1;
-        for (let k = 2; k <= N; k++) s += Math.pow(p, k - 1);
-        return s;
-      }
-      // SDAR: TPF = N / (E[S|N] + 1), E[S|N] via binomial force schedule
-      function sdarES(p, N) {
-        const ES = new Array(N + 1).fill(0);
-        ES[1] = 1;
-        for (let R = 2; R <= N; R++) {
-          let v = Math.pow(1 - p, R - 1) * (1 + (R - 1) * p) * ES[R - 1];
-          for (let h = 2; h <= R; h++) {
-            let prob = 1;
-            for (let i = 0; i < h; i++) prob *= (R - i) / (i + 1);
-            prob *= Math.pow(p, h) * Math.pow(1 - p, R - h);
-            v += prob * ES[R - h];
-          }
-          ES[R] = 1 + v;
-        }
-        return ES[N];
-      }
-      function sdarTPF(N, p) {
-        if (N <= 1) return 1;
-        return N / (sdarES(p, N) + 1);
-      }
-      function sdarOH(N, p) {
-        if (N <= 1) return 1;
-        return sdarES(p, N) + 1;
-      }
-      // SDAR step PMF: P(S=s|N,p) via recursive convolution
-      // Returns array pmf[s] for s=0..maxS
-      function sdarStepPMF(p, N, maxS) {
-        if (N <= 1) return [0, 1]; // 1 step always
-        // dp[r][s] = P(takes exactly s steps to finish r remaining tokens)
-        // Base: dp[0][0]=1
-        // Transition: at each step, h tokens pass (binomial, min 1)
-        const dp = [];
-        for (let r = 0; r <= N; r++) {
-          dp[r] = new Array(maxS + 1).fill(0);
-        }
-        dp[0][0] = 1;
-        for (let r = 1; r <= N; r++) {
-          for (let s = 1; s <= maxS; s++) {
+// ── Doc toggles ──
+function toggleDoc(id){const el=document.getElementById(id);el.classList.toggle('open');if(el.classList.contains('open'))el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+
+// ── TPF ──
+function isdTPF(N,p){if(N<=1)return 1;let n=2;for(let k=1;k<=N-2;k++)n+=Math.pow(p,k);return n/(2-Math.pow(p,N-1));}
+function avgAcc(N,p){if(N<=1)return 1;let s=1;for(let k=2;k<=N;k++)s+=Math.pow(p,k-1);return s;}
+// SDAR: TPF = N / (E[S|N] + 1), E[S|N] via binomial force schedule
+function sdarES(p,N){const ES=new Array(N+1).fill(0);ES[1]=1;for(let R=2;R<=N;R++){let v=(Math.pow(1-p,R-1)*(1+(R-1)*p))*ES[R-1];for(let h=2;h<=R;h++){let prob=1;for(let i=0;i<h;i++)prob*=(R-i)/(i+1);prob*=Math.pow(p,h)*Math.pow(1-p,R-h);v+=prob*ES[R-h];}ES[R]=1+v;}return ES[N];}
+function sdarTPF(N,p){if(N<=1)return 1;return N/(sdarES(p,N)+1);}
+function sdarOH(N,p){if(N<=1)return 1;return sdarES(p,N)+1;}
+// SDAR step PMF: P(S=s|N,p) via recursive convolution
+// Returns array pmf[s] for s=0..maxS
+function sdarStepPMF(p,N,maxS){
+    if(N<=1)return [0,1]; // 1 step always
+    // dp[r][s] = P(takes exactly s steps to finish r remaining tokens)
+    // Base: dp[0][0]=1
+    // Transition: at each step, h tokens pass (binomial, min 1)
+    const dp=[];for(let r=0;r<=N;r++){dp[r]=new Array(maxS+1).fill(0);}
+    dp[0][0]=1;
+    for(let r=1;r<=N;r++){
+        for(let s=1;s<=maxS;s++){
             // from r remaining, h pass this step (h=1..r), then r-h remaining in s-1 steps
-            for (let h = 1; h <= r; h++) {
-              let prob;
-              if (h === r && r === 1) {
-                prob = 1;
-              } // only 1 token, always passes or forced
-              else {
-                // P(exactly h pass) from binomial, but at least 1 forced
-                // P(H=h|H>=1) = P(H=h)/(1-(1-p)^r) for h>=1
-                let binom = 1;
-                for (let i = 0; i < h; i++) binom *= (r - i) / (i + 1);
-                binom *= Math.pow(p, h) * Math.pow(1 - p, r - h);
-                let p0 = Math.pow(1 - p, r);
-                if (h === 1) binom += p0; // force at least 1: redistribute P(H=0) to H=1
-                prob = binom;
-              }
-              dp[r][s] += prob * dp[r - h][s - 1];
+            for(let h=1;h<=r;h++){
+                let prob;
+                if(h===r&&r===1){prob=1;}// only 1 token, always passes or forced
+                else{
+                    // P(exactly h pass) from binomial, but at least 1 forced
+                    // P(H=h|H>=1) = P(H=h)/(1-(1-p)^r) for h>=1
+                    let binom=1;for(let i=0;i<h;i++)binom*=(r-i)/(i+1);
+                    binom*=Math.pow(p,h)*Math.pow(1-p,r-h);
+                    let p0=Math.pow(1-p,r);
+                    if(h===1)binom+=p0; // force at least 1: redistribute P(H=0) to H=1
+                    prob=binom;
+                }
+                dp[r][s]+=prob*dp[r-h][s-1];
             }
-          }
         }
-        return dp[N];
-      }
-      // E[max of B iid from PMF] via CDF
-      function sdarEMaxSteps(pmf, B) {
-        const cdf = [];
-        let cum = 0;
-        for (let s = 0; s < pmf.length; s++) {
-          cum += pmf[s];
-          cdf[s] = cum;
-        }
-        let e = 0;
-        for (let s = 1; s < pmf.length; s++) {
-          const prev = cdf[s - 1] || 0;
-          e += s * (Math.pow(cdf[s], B) - Math.pow(prev, B));
-        }
-        return e;
-      }
-      // Batch-adjusted SDAR TPF
-      function sdarTPFBatch(N, p, B) {
-        if (N <= 1) return 1;
-        if (B <= 1) return sdarTPF(N, p);
-        const pmf = sdarStepPMF(p, N, N + 5);
-        const emax = sdarEMaxSteps(pmf, B);
-        return N / (emax + 1);
-      }
-      // ISD fixed-query overhead: (2N-1)(2 - p^(N-1)) / (2 + p + ... + p^(N-2))
-      function isdOHfix(N, p) {
-        if (N <= 1) return 1;
-        let denom = 2;
-        for (let k = 1; k <= N - 2; k++) denom += Math.pow(p, k);
-        return ((2 * N - 1) * (2 - Math.pow(p, N - 1))) / denom;
-      }
-      // Compute-bound efficiency = TPF^2 / query_size = TPF / OH
-      // Accounts for: (1) more tokens per forward, (2) fewer forwards needed, (3) more queries per forward
-      // AR = 1. Efficiency > 1 means parallel decoding is FLOP-positive.
-      function isdEff(N, p) {
-        if (N <= 1) return 1;
-        return isdTPF(N, p) / isdOHfix(N, p);
-      }
-      function sdarEff(N, p) {
-        if (N <= 1) return 1;
-        return sdarTPF(N, p) / sdarOH(N, p);
-      }
-      function risdEff(N, p, a) {
-        if (N <= 1) return 1;
-        return isdTPF(N, p) / (isdOHfix(N, p) * a);
-      }
-      const Nv = [];
-      for (let n = 1; n <= 16; n++) Nv.push(n);
-      const emp = [
-        { n: 2, tpf: 1.8, l: "N=2" },
-        { n: 3, tpf: 2.48, l: "N=3" },
-        { n: 4, tpf: 3.03, l: "N=4" },
-        { n: 8, tpf: 4.01, l: "N=8" },
-      ];
-      function empD() {
-        return Nv.map((n) => {
-          const p = emp.find((e) => e.n === n);
-          return p ? p.tpf : null;
-        });
-      }
-      const c = {
-        l: "#1a73e8",
-        f: "rgba(26,115,232,0.08)",
-        e: "#d93025",
-        r: "#7563B0",
-        a: "#c55a11",
-        b: "rgba(26,115,232,0.4)",
-        bb: "#1a73e8",
-        g: "rgba(0,0,0,0.05)",
-        t: "#494949",
-      };
-      Chart.defaults.color = c.t;
-      Chart.defaults.borderColor = c.g;
-      const ch = new Chart(document.getElementById("tpfChart").getContext("2d"), {
-        type: "line",
-        data: {
-          labels: Nv,
-          datasets: [
-            {
-              label: "I-DLM",
-              data: [],
-              borderColor: c.l,
-              backgroundColor: c.f,
-              borderWidth: 2.5,
-              pointRadius: 4,
-              pointBackgroundColor: c.l,
-              fill: true,
-              tension: 0.3,
-            },
-            {
-              label: "Empirical (MATH-500)",
-              data: empD(),
-              borderColor: c.e,
-              backgroundColor: c.e,
-              borderWidth: 2,
-              pointRadius: 9,
-              pointHoverRadius: 12,
-              pointStyle: "rectRot",
-              pointBackgroundColor: c.e,
-              pointBorderColor: "#fff",
-              pointBorderWidth: 2,
-              showLine: false,
-              fill: false,
-              order: -1,
-            },
-            {
-              label: "R-ISD Lossless",
-              data: [],
-              borderColor: c.r,
-              borderWidth: 2,
-              borderDash: [6, 3],
-              pointRadius: 3,
-              pointBackgroundColor: c.r,
-              fill: false,
-              tension: 0.3,
-            },
-            // [COMMENTED OUT] SDAR dataset — uncomment to show SDAR on memory-bound chart
-            // {label:'SDAR',data:[],borderColor:c.a,backgroundColor:'rgba(197,90,17,0.06)',borderWidth:2,pointRadius:3,pointBackgroundColor:c.a,fill:false,tension:.3},
-            { label: "AR baseline", data: Nv.map(() => 1), borderColor: "#888", borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, fill: false },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: "nearest", intersect: true },
-          plugins: {
-            legend: { position: "top", labels: { font: { size: 11 }, usePointStyle: true, padding: 8, boxWidth: 8 } },
-            tooltip: {
-              callbacks: {
-                title: (i) => `Stride N = ${i[0].label}`,
-                label: (x) => {
-                  if (x.datasetIndex === 0) return `I-DLM = ${x.parsed.y.toFixed(3)}x`;
-                  if (x.datasetIndex === 1) {
-                    const p = emp.find((e) => e.n === parseInt(x.label));
-                    return p ? `Empirical = ${p.tpf}x` : "";
-                  }
-                  if (x.datasetIndex === 2) return `R-ISD = ${x.parsed.y.toFixed(3)}x`;
-                  return x.dataset.label;
-                },
-              },
-            },
-          },
-          scales: {
-            x: { title: { display: true, text: "Stride (N)", font: { size: 12, weight: "bold" } }, grid: { display: false } },
-            y: { title: { display: true, text: "Speedup", font: { size: 12, weight: "bold" } }, min: 0 },
-          },
-        },
-      });
-      const ch2 = new Chart(document.getElementById("acceptedChart").getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: Nv,
-          datasets: [{ label: "Avg. Accepted", data: [], backgroundColor: c.b, borderColor: c.bb, borderWidth: 1, borderRadius: 3 }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: "top", labels: { font: { size: 11 }, usePointStyle: true, padding: 8 } },
-            tooltip: { callbacks: { title: (i) => `Stride N = ${i[0].label}`, label: (x) => `${x.parsed.y.toFixed(2)} tokens` } },
-          },
-          scales: {
-            x: { title: { display: true, text: "Stride (N)", font: { size: 12, weight: "bold" } }, grid: { display: false } },
-            y: { title: { display: true, text: "Avg. Accepted", font: { size: 12, weight: "bold" } }, min: 0 },
-          },
-        },
-      });
-      /* [COMMENTED OUT] Compute-bound efficiency chart — uncomment to re-enable
+    }
+    return dp[N];
+}
+// E[max of B iid from PMF] via CDF
+function sdarEMaxSteps(pmf,B){
+    const cdf=[];let cum=0;
+    for(let s=0;s<pmf.length;s++){cum+=pmf[s];cdf[s]=cum;}
+    let e=0;
+    for(let s=1;s<pmf.length;s++){
+        const prev=cdf[s-1]||0;
+        e+=s*(Math.pow(cdf[s],B)-Math.pow(prev,B));
+    }
+    return e;
+}
+// Batch-adjusted SDAR TPF
+function sdarTPFBatch(N,p,B){
+    if(N<=1)return 1;
+    if(B<=1)return sdarTPF(N,p);
+    const pmf=sdarStepPMF(p,N,N+5);
+    const emax=sdarEMaxSteps(pmf,B);
+    return N/(emax+1);
+}
+// ISD fixed-query overhead: (2N-1)(2 - p^(N-1)) / (2 + p + ... + p^(N-2))
+function isdOHfix(N,p){if(N<=1)return 1;let denom=2;for(let k=1;k<=N-2;k++)denom+=Math.pow(p,k);return(2*N-1)*(2-Math.pow(p,N-1))/denom;}
+// Compute-bound efficiency = TPF^2 / query_size = TPF / OH
+// Accounts for: (1) more tokens per forward, (2) fewer forwards needed, (3) more queries per forward
+// AR = 1. Efficiency > 1 means parallel decoding is FLOP-positive.
+function isdEff(N,p){if(N<=1)return 1;return isdTPF(N,p)/isdOHfix(N,p);}
+function sdarEff(N,p){if(N<=1)return 1;return sdarTPF(N,p)/sdarOH(N,p);}
+function risdEff(N,p,a){if(N<=1)return 1;return isdTPF(N,p)/(isdOHfix(N,p)*a);}
+const Nv=[];for(let n=1;n<=16;n++)Nv.push(n);
+const emp=[{n:2,tpf:1.80,l:'N=2'},{n:3,tpf:2.48,l:'N=3'},{n:4,tpf:3.03,l:'N=4'},{n:8,tpf:4.01,l:'N=8'}];
+function empD(){return Nv.map(n=>{const p=emp.find(e=>e.n===n);return p?p.tpf:null;});}
+const c={l:'#1a73e8',f:'rgba(26,115,232,0.08)',e:'#d93025',r:'#7563B0',a:'#c55a11',b:'rgba(26,115,232,0.4)',bb:'#1a73e8',g:'rgba(0,0,0,0.05)',t:'#494949'};
+Chart.defaults.color=c.t;Chart.defaults.borderColor=c.g;
+const ch=new Chart(document.getElementById('tpfChart').getContext('2d'),{type:'line',data:{labels:Nv,datasets:[
+{label:'I-DLM',data:[],borderColor:c.l,backgroundColor:c.f,borderWidth:2.5,pointRadius:4,pointBackgroundColor:c.l,fill:true,tension:.3},
+{label:'Empirical (MATH-500)',data:empD(),borderColor:c.e,backgroundColor:c.e,borderWidth:2,pointRadius:9,pointHoverRadius:12,pointStyle:'rectRot',pointBackgroundColor:c.e,pointBorderColor:'#fff',pointBorderWidth:2,showLine:false,fill:false,order:-1},
+{label:'R-ISD Lossless',data:[],borderColor:c.r,borderWidth:2,borderDash:[6,3],pointRadius:3,pointBackgroundColor:c.r,fill:false,tension:.3},
+// [COMMENTED OUT] SDAR dataset — uncomment to show SDAR on memory-bound chart
+// {label:'SDAR',data:[],borderColor:c.a,backgroundColor:'rgba(197,90,17,0.06)',borderWidth:2,pointRadius:3,pointBackgroundColor:c.a,fill:false,tension:.3},
+{label:'AR baseline',data:Nv.map(()=>1),borderColor:'#888',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false}
+]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:true},plugins:{legend:{position:'top',labels:{font:{size:11},usePointStyle:true,padding:8,boxWidth:8}},tooltip:{callbacks:{title:i=>`Stride N = ${i[0].label}`,label:x=>{if(x.datasetIndex===0)return`I-DLM = ${x.parsed.y.toFixed(3)}x`;if(x.datasetIndex===1){const p=emp.find(e=>e.n===parseInt(x.label));return p?`Empirical = ${p.tpf}x`:'';}if(x.datasetIndex===2)return`R-ISD = ${x.parsed.y.toFixed(3)}x`;return x.dataset.label;}}}},scales:{x:{title:{display:true,text:'Stride (N)',font:{size:12,weight:'bold'}},grid:{display:false}},y:{title:{display:true,text:'Speedup',font:{size:12,weight:'bold'}},min:0}}}});
+const ch2=new Chart(document.getElementById('acceptedChart').getContext('2d'),{type:'bar',data:{labels:Nv,datasets:[{label:'Avg. Accepted',data:[],backgroundColor:c.b,borderColor:c.bb,borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11},usePointStyle:true,padding:8}},tooltip:{callbacks:{title:i=>`Stride N = ${i[0].label}`,label:x=>`${x.parsed.y.toFixed(2)} tokens`}}},scales:{x:{title:{display:true,text:'Stride (N)',font:{size:12,weight:'bold'}},grid:{display:false}},y:{title:{display:true,text:'Avg. Accepted',font:{size:12,weight:'bold'}},min:0}}}});
+/* [COMMENTED OUT] Compute-bound efficiency chart — uncomment to re-enable
 const ch3=new Chart(document.getElementById('effChart').getContext('2d'),{type:'line',data:{labels:Nv,datasets:[
 {label:'I-DLM (fixed query)',data:[],borderColor:c.l,backgroundColor:c.f,borderWidth:2.5,pointRadius:4,pointBackgroundColor:c.l,fill:true,tension:.3},
 {label:'R-ISD Lossless',data:[],borderColor:c.r,borderWidth:2,borderDash:[6,3],pointRadius:3,pointBackgroundColor:c.r,fill:false,tension:.3},
@@ -1612,26 +529,16 @@ const ch3=new Chart(document.getElementById('effChart').getContext('2d'),{type:'
 {label:'Break-even (Eff = 1)',data:Nv.map(()=>1),borderColor:'#888',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false}
 ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:true},plugins:{legend:{position:'top',labels:{font:{size:11},usePointStyle:true,padding:8,boxWidth:8}},tooltip:{callbacks:{title:i=>`Stride N = ${i[0].label}`,label:x=>{if(x.datasetIndex===0)return`I-DLM = ${x.parsed.y.toFixed(3)}`;if(x.datasetIndex===1)return`R-ISD = ${x.parsed.y.toFixed(3)}`;if(x.datasetIndex===2)return`SDAR = ${x.parsed.y.toFixed(3)}`;return x.dataset.label;}}}},scales:{x:{title:{display:true,text:'Stride (N)',font:{size:12,weight:'bold'}},grid:{display:false}},y:{title:{display:true,text:'Compute-Bound Speedup (TPF/OH)',font:{size:12,weight:'bold'}},min:0}}}});
 */
-      function ga() {
-        return parseInt(document.getElementById("loraSlider").value) / 100;
-      }
-      function gps() {
-        return parseInt(document.getElementById("sdarSlider").value) / 100;
-      }
-      function gbsz() {
-        const v = parseInt(document.getElementById("bszSlider").value);
-        return [1, 2, 4, 8, 16, 32, 64][v];
-      }
-      function upd() {
-        const p = parseInt(document.getElementById("pSlider").value) / 100,
-          a = ga();
-        // Memory-bound: I-DLM + R-ISD only (SDAR commented out)
-        ch.data.datasets[0].data = Nv.map((n) => isdTPF(n, p));
-        ch.data.datasets[2].data = Nv.map((n) => isdTPF(n, p) / a);
-        ch.update("none");
-        ch2.data.datasets[0].data = Nv.map((n) => avgAcc(n, p));
-        ch2.update("none");
-        /* [COMMENTED OUT] Compute-bound chart update — uncomment with ch3
+function ga(){return parseInt(document.getElementById('loraSlider').value)/100;}
+function gps(){return parseInt(document.getElementById('sdarSlider').value)/100;}
+function gbsz(){const v=parseInt(document.getElementById('bszSlider').value);return[1,2,4,8,16,32,64][v];}
+function upd(){const p=parseInt(document.getElementById('pSlider').value)/100,a=ga();
+// Memory-bound: I-DLM + R-ISD only (SDAR commented out)
+ch.data.datasets[0].data=Nv.map(n=>isdTPF(n,p));
+ch.data.datasets[2].data=Nv.map(n=>isdTPF(n,p)/a);
+ch.update('none');
+ch2.data.datasets[0].data=Nv.map(n=>avgAcc(n,p));ch2.update('none');
+/* [COMMENTED OUT] Compute-bound chart update — uncomment with ch3
 const ps=gps(),B=gbsz();
 document.getElementById('bszValue').textContent=B;
 ch3.data.datasets[0].data=Nv.map(n=>isdEff(n,p));
@@ -1639,63 +546,19 @@ ch3.data.datasets[1].data=Nv.map(n=>risdEff(n,p,a));
 ch3.data.datasets[2].data=Nv.map(n=>{const t=sdarTPFBatch(n,ps,B);return t*t/n;});
 ch3.update('none');
 */
-        document.getElementById("tpfN2").textContent = isdTPF(2, p).toFixed(2) + "x";
-        document.getElementById("tpfN3").textContent = isdTPF(3, p).toFixed(2) + "x";
-        document.getElementById("tpfN4").textContent = isdTPF(4, p).toFixed(2) + "x";
-        document.getElementById("tpfN8").textContent = isdTPF(8, p).toFixed(2) + "x";
-        updBk(p);
-      }
-      function updBk(p) {
-        const Ns = [2, 3, 4, 5, 8];
-        let h = '<table class="bk"><tr><th>Pos</th>';
-        Ns.forEach((n) => (h += `<th>N=${n}</th>`));
-        h += "</tr>";
-        for (let k = 1; k <= 8; k++) {
-          h += `<tr><td>Token ${k}</td>`;
-          Ns.forEach((n) => {
-            if (k === 1) h += '<td style="color:var(--accent);font-weight:600;">1.000</td>';
-            else if (k <= n) {
-              const pr = Math.pow(p, k - 1),
-                cl = pr > 0.8 ? "var(--accent)" : pr > 0.5 ? "var(--orange)" : "var(--red)";
-              h += `<td style="color:${cl};">${pr.toFixed(3)}</td>`;
-            } else h += '<td style="color:var(--text3);">-</td>';
-          });
-          h += "</tr>";
-        }
-        h += '<tr style="border-top:2px solid var(--border);"><td><strong>E[acc]</strong></td>';
-        Ns.forEach((n) => {
-          let e = 1;
-          for (let k = 2; k <= n; k++) e += Math.pow(p, k - 1);
-          h += `<td style="font-weight:700;color:var(--accent);">${e.toFixed(2)}</td>`;
-        });
-        h += "</tr><tr><td><strong>TPF</strong></td>";
-        Ns.forEach((n) => (h += `<td style="font-weight:700;color:var(--accent);">${isdTPF(n, p).toFixed(3)}</td>`));
-        h += "</tr></table>";
-        document.getElementById("breakdownContainer").innerHTML = h;
-      }
-      function setP(v) {
-        document.getElementById("pSlider").value = v;
-        document.getElementById("pValue").textContent = (v / 100).toFixed(2);
-        upd();
-        document.querySelectorAll(".presets button").forEach((b) => b.classList.toggle("active", b.textContent === (v / 100).toFixed(2)));
-      }
-      document.getElementById("pSlider").addEventListener("input", function () {
-        document.getElementById("pValue").textContent = (this.value / 100).toFixed(2);
-        upd();
-        document.querySelectorAll(".presets button").forEach((b) => b.classList.toggle("active", b.textContent === (this.value / 100).toFixed(2)));
-      });
-      document.getElementById("loraSlider").addEventListener("input", function () {
-        document.getElementById("loraValue").textContent = (this.value / 100).toFixed(2);
-        upd();
-      });
-      document.getElementById("sdarSlider").addEventListener("input", function () {
-        document.getElementById("sdarValue").textContent = (this.value / 100).toFixed(2);
-        upd();
-      });
-      document.getElementById("bszSlider").addEventListener("input", function () {
-        upd();
-      });
-      upd();
-    </script>
-  </body>
+document.getElementById('tpfN2').textContent=isdTPF(2,p).toFixed(2)+'x';document.getElementById('tpfN3').textContent=isdTPF(3,p).toFixed(2)+'x';document.getElementById('tpfN4').textContent=isdTPF(4,p).toFixed(2)+'x';document.getElementById('tpfN8').textContent=isdTPF(8,p).toFixed(2)+'x';
+updBk(p);}
+function updBk(p){const Ns=[2,3,4,5,8];let h='<table class="bk"><tr><th>Pos</th>';Ns.forEach(n=>h+=`<th>N=${n}</th>`);h+='</tr>';
+for(let k=1;k<=8;k++){h+=`<tr><td>Token ${k}</td>`;Ns.forEach(n=>{if(k===1)h+='<td style="color:var(--accent);font-weight:600;">1.000</td>';else if(k<=n){const pr=Math.pow(p,k-1),cl=pr>.8?'var(--accent)':pr>.5?'var(--orange)':'var(--red)';h+=`<td style="color:${cl};">${pr.toFixed(3)}</td>`;}else h+='<td style="color:var(--text3);">-</td>';});h+='</tr>';}
+h+='<tr style="border-top:2px solid var(--border);"><td><strong>E[acc]</strong></td>';Ns.forEach(n=>{let e=1;for(let k=2;k<=n;k++)e+=Math.pow(p,k-1);h+=`<td style="font-weight:700;color:var(--accent);">${e.toFixed(2)}</td>`;});
+h+='</tr><tr><td><strong>TPF</strong></td>';Ns.forEach(n=>h+=`<td style="font-weight:700;color:var(--accent);">${isdTPF(n,p).toFixed(3)}</td>`);h+='</tr></table>';
+document.getElementById('breakdownContainer').innerHTML=h;}
+function setP(v){document.getElementById('pSlider').value=v;document.getElementById('pValue').textContent=(v/100).toFixed(2);upd();document.querySelectorAll('.presets button').forEach(b=>b.classList.toggle('active',b.textContent===(v/100).toFixed(2)));}
+document.getElementById('pSlider').addEventListener('input',function(){document.getElementById('pValue').textContent=(this.value/100).toFixed(2);upd();document.querySelectorAll('.presets button').forEach(b=>b.classList.toggle('active',b.textContent===(this.value/100).toFixed(2)));});
+document.getElementById('loraSlider').addEventListener('input',function(){document.getElementById('loraValue').textContent=(this.value/100).toFixed(2);upd();});
+document.getElementById('sdarSlider').addEventListener('input',function(){document.getElementById('sdarValue').textContent=(this.value/100).toFixed(2);upd();});
+document.getElementById('bszSlider').addEventListener('input',function(){upd();});
+upd();
+</script>
+</body>
 </html>
