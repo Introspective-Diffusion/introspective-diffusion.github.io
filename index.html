@@ -405,24 +405,99 @@
 <p>Everything you need to train, serve, and deploy I-DLM. Click any card to expand.</p>
 
 <div class="doc-grid">
-    <a class="doc-card" onclick="toggleDoc('doc-install')"><h4>Installation</h4><p>Setup, dependencies, and environment</p><span class="tag soon">Coming Soon</span></a>
-    <a class="doc-card" onclick="toggleDoc('doc-quickstart')"><h4>Quick Start</h4><p>Run I-DLM inference in 5 minutes</p><span class="tag soon">Coming Soon</span></a>
-    <a class="doc-card" onclick="toggleDoc('doc-training')"><h4>Training</h4><p>Introspective-consistency training recipe</p><span class="tag soon">Coming Soon</span></a>
-    <a class="doc-card" onclick="toggleDoc('doc-inference')"><h4>Inference &amp; ISD</h4><p>Strided decoding algorithm and config</p><span class="tag soon">Coming Soon</span></a>
-    <a class="doc-card" onclick="toggleDoc('doc-serving')"><h4>Serving (SGLang)</h4><p>Production deployment with SGLang</p><span class="tag soon">Coming Soon</span></a>
-    <a class="doc-card" onclick="toggleDoc('doc-lora')"><h4>Lossless R-ISD</h4><p>Gated LoRA for bit-for-bit output</p><span class="tag soon">Coming Soon</span></a>
-    <a class="doc-card" onclick="toggleDoc('doc-api')"><h4>API Reference</h4><p>Core APIs and configuration options</p><span class="tag soon">Coming Soon</span></a>
-    <a class="doc-card" onclick="toggleDoc('doc-bench')"><h4>Benchmarks</h4><p>Reproduce our evaluations</p><span class="tag soon">Coming Soon</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-install')"><h4>Installation</h4><p>Setup, dependencies, and environment</p><span class="tag ready">Ready</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-quickstart')"><h4>Quick Start</h4><p>Run I-DLM inference in 5 minutes</p><span class="tag ready">Ready</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-training')"><h4>Training</h4><p>Introspective-consistency training recipe</p><span class="tag ready">Ready</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-inference')"><h4>Inference &amp; ISD</h4><p>Strided decoding algorithm and config</p><span class="tag ready">Ready</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-serving')"><h4>Serving (SGLang)</h4><p>Production deployment with SGLang</p><span class="tag ready">Ready</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-lora')"><h4>Lossless R-ISD</h4><p>Gated LoRA for bit-for-bit output</p><span class="tag ready">Ready</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-models')"><h4>Model Zoo</h4><p>Available models and weights</p><span class="tag ready">Ready</span></a>
+    <a class="doc-card" onclick="toggleDoc('doc-bench')"><h4>Benchmarks</h4><p>Reproduce our evaluations</p><span class="tag ready">Ready</span></a>
 </div>
 
-<div class="doc-page" id="doc-install"><button class="close-btn" onclick="toggleDoc('doc-install')">&times;</button><h3>Installation</h3><div class="placeholder-inner"><div class="icon">&#128230;</div><p>Installation guide coming soon. Star the repo for updates.</p></div></div>
-<div class="doc-page" id="doc-quickstart"><button class="close-btn" onclick="toggleDoc('doc-quickstart')">&times;</button><h3>Quick Start</h3><div class="placeholder-inner"><div class="icon">&#9889;</div><p>Quick start tutorial coming soon.</p></div></div>
-<div class="doc-page" id="doc-training"><button class="close-btn" onclick="toggleDoc('doc-training')">&times;</button><h3>Training</h3><div class="placeholder-inner"><div class="icon">&#128295;</div><p>Training documentation coming soon.</p></div></div>
-<div class="doc-page" id="doc-inference"><button class="close-btn" onclick="toggleDoc('doc-inference')">&times;</button><h3>Inference &amp; ISD</h3><div class="placeholder-inner"><div class="icon">&#9654;</div><p>Inference documentation coming soon.</p></div></div>
-<div class="doc-page" id="doc-serving"><button class="close-btn" onclick="toggleDoc('doc-serving')">&times;</button><h3>Serving (SGLang)</h3><div class="placeholder-inner"><div class="icon">&#127760;</div><p>SGLang serving guide coming soon.</p></div></div>
-<div class="doc-page" id="doc-lora"><button class="close-btn" onclick="toggleDoc('doc-lora')">&times;</button><h3>Lossless R-ISD</h3><div class="placeholder-inner"><div class="icon">&#128274;</div><p>R-ISD / Gated LoRA documentation coming soon.</p></div></div>
-<div class="doc-page" id="doc-api"><button class="close-btn" onclick="toggleDoc('doc-api')">&times;</button><h3>API Reference</h3><div class="placeholder-inner"><div class="icon">&#128209;</div><p>API reference coming soon.</p></div></div>
-<div class="doc-page" id="doc-bench"><button class="close-btn" onclick="toggleDoc('doc-bench')">&times;</button><h3>Benchmarks</h3><div class="placeholder-inner"><div class="icon">&#128200;</div><p>Benchmark reproduction guide coming soon.</p></div></div>
+<div class="doc-page" id="doc-install"><button class="close-btn" onclick="toggleDoc('doc-install')">&times;</button><h3>Installation</h3>
+<pre>git clone https://github.com/Introspective-Diffusion/I-DLM.git
+cd I-DLM/inference
+bash install.sh</pre>
+<p>See <a href="https://github.com/Introspective-Diffusion/I-DLM/tree/main/inference">inference/README.md</a> for detailed environment setup.</p>
+</div>
+<div class="doc-page" id="doc-quickstart"><button class="close-btn" onclick="toggleDoc('doc-quickstart')">&times;</button><h3>Quick Start</h3>
+<p><strong>1. Launch server:</strong></p>
+<pre>python -m sglang.launch_server \
+    --model-path yifanyu/I-DLM-8B \
+    --trust-remote-code --tp-size 1 --dtype bfloat16 \
+    --mem-fraction-static 0.85 --max-running-requests 32 \
+    --attention-backend flashinfer --dllm-algorithm IDLMBlockN \
+    --dllm-algorithm-config inference/configs/idlm_blockN4_config.yaml \
+    --port 30000</pre>
+<p><strong>2. Generate:</strong></p>
+<pre>curl http://localhost:30000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "default",
+    "messages": [{"role": "user", "content": "Prove that sqrt(2) is irrational."}],
+    "max_tokens": 4096, "temperature": 1.0
+  }'</pre>
+</div>
+<div class="doc-page" id="doc-training"><button class="close-btn" onclick="toggleDoc('doc-training')">&times;</button><h3>Training</h3>
+<p>Convert a pretrained AR model into I-DLM via introspective-consistency training:</p>
+<ul style="font-size:13.5px;color:var(--text2);margin:8px 0;padding-left:20px;">
+<li><strong>Input:</strong> Concatenate fully-masked sequence with clean sequence <code>[x_t | x_0]</code></li>
+<li><strong>Attention:</strong> Strict causal masking across all positions</li>
+<li><strong>Loss:</strong> Auto-balanced CE on both masked and clean positions</li>
+<li><strong>Data:</strong> 4.5B tokens, 8 H100 GPUs, 2 epochs with stride curriculum (N=2 then N=3)</li>
+</ul>
+<p>See <a href="https://github.com/Introspective-Diffusion/I-DLM/tree/main/training">training/README.md</a> for scripts and configs.</p>
+</div>
+<div class="doc-page" id="doc-inference"><button class="close-btn" onclick="toggleDoc('doc-inference')">&times;</button><h3>Inference &amp; ISD</h3>
+<p>Introspective Strided Decoding (ISD) generates and verifies in a single forward pass:</p>
+<ul style="font-size:13.5px;color:var(--text2);margin:8px 0;padding-left:20px;">
+<li><strong>MASK positions:</strong> Propose new tokens (distribution <em>q</em>)</li>
+<li><strong>Clean positions:</strong> Verify prior tokens (anchor distribution <em>p</em>)</li>
+<li><strong>Acceptance:</strong> <code>min(1, p(x)/q(x))</code> guarantees AR-distribution output</li>
+<li><strong>Stride N=4:</strong> TPF=2.96, ~3x wall-clock speedup in memory-bound regime</li>
+</ul>
+<p>See <a href="https://github.com/Introspective-Diffusion/I-DLM/tree/main/inference">inference/README.md</a> for algorithm configs.</p>
+</div>
+<div class="doc-page" id="doc-serving"><button class="close-btn" onclick="toggleDoc('doc-serving')">&times;</button><h3>Serving (SGLang)</h3>
+<p>I-DLM uses strict causal attention, enabling direct integration into SGLang with no custom infrastructure:</p>
+<ul style="font-size:13.5px;color:var(--text2);margin:8px 0;padding-left:20px;">
+<li>Paged KV cache and continuous batching</li>
+<li>CUDA graph capture (+42-76% throughput)</li>
+<li>Stationary-batch decode-loop scheduling (+11-21%)</li>
+<li>Argmax proposals (+11-15%)</li>
+<li>Paged-only attention kernel (+10-14%)</li>
+</ul>
+<p>Full system achieves 2.1-2.5x throughput over naive baseline.</p>
+</div>
+<div class="doc-page" id="doc-lora"><button class="close-btn" onclick="toggleDoc('doc-lora')">&times;</button><h3>Lossless R-ISD</h3>
+<p>Residual ISD (R-ISD) adds a gated LoRA adapter for <strong>bit-for-bit lossless</strong> acceleration:</p>
+<ul style="font-size:13.5px;color:var(--text2);margin:8px 0;padding-left:20px;">
+<li>LoRA active only at MASK positions; verify positions use base-only weights</li>
+<li>Output is identical to the base AR model by construction</li>
+<li>LoRA rank=128, overhead factor ~1.12x</li>
+<li>Model: <a href="https://huggingface.co/yifanyu/I-DLM-8B-lora-r128">yifanyu/I-DLM-8B-lora-r128</a></li>
+</ul>
+</div>
+<div class="doc-page" id="doc-models"><button class="close-btn" onclick="toggleDoc('doc-models')">&times;</button><h3>Model Zoo</h3>
+<table class="bk">
+<tr><th>Model</th><th>Base</th><th>Description</th></tr>
+<tr><td><a href="https://huggingface.co/yifanyu/I-DLM-8B">I-DLM-8B</a></td><td>Qwen3-8B</td><td>Main model, matches AR quality</td></tr>
+<tr><td><a href="https://huggingface.co/yifanyu/I-DLM-32B">I-DLM-32B</a></td><td>Qwen3-32B</td><td>Large scale, outperforms LLaDA-2.1-flash (100B)</td></tr>
+<tr><td><a href="https://huggingface.co/yifanyu/I-DLM-8B-lora-r128">I-DLM-8B-LoRA</a></td><td>Qwen3-8B</td><td>Gated LoRA (rank=128) for lossless R-ISD</td></tr>
+</table>
+<p>All models use <code>trust_remote_code=True</code> (custom SDARForCausalLM architecture).</p>
+</div>
+<div class="doc-page" id="doc-bench"><button class="close-btn" onclick="toggleDoc('doc-bench')">&times;</button><h3>Benchmarks</h3>
+<p>We evaluate on 15 benchmarks across 4 categories with thinking mode enabled:</p>
+<ul style="font-size:13.5px;color:var(--text2);margin:8px 0;padding-left:20px;">
+<li><strong>Knowledge:</strong> ARC-C, MMLU, MMLU-Pro, GPQA-D, GPQA</li>
+<li><strong>Math:</strong> GSM8K, MATH-500, MathBench, AIME-24, AIME-25</li>
+<li><strong>Code:</strong> HumanEval, MBPP, LiveCodeBench-v6</li>
+<li><strong>Instruction:</strong> IFEval</li>
+</ul>
+<p>See <a href="https://github.com/Introspective-Diffusion/I-DLM/tree/main/inference/eval">inference/eval/</a> for reproduction scripts.</p>
+</div>
 
 <hr>
 
