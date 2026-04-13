@@ -508,7 +508,7 @@ function isdEff(N,p){if(N<=1)return 1;return isdTPF(N,p)/isdOHfix(N,p);}
 function sdarEff(N,p){if(N<=1)return 1;return sdarTPF(N,p)/sdarOH(N,p);}
 function risdEff(N,p,a){if(N<=1)return 1;return isdTPF(N,p)/(isdOHfix(N,p)*a);}
 const Nv=[];for(let n=1;n<=16;n++)Nv.push(n);
-const emp=[{n:2,tpf:1.80,l:'N=2'},{n:3,tpf:2.48,l:'N=3'},{n:4,tpf:3.03,l:'N=4'},{n:8,tpf:4.01,l:'N=8'}];
+const emp=[{n:2,tpf:1.80,l:'N=2'},{n:3,tpf:2.48,l:'N=3'},{n:4,tpf:2.96,l:'N=4'},{n:8,tpf:4.01,l:'N=8'}];
 function empD(){return Nv.map(n=>{const p=emp.find(e=>e.n===n);return p?p.tpf:null;});}
 const c={l:'#1a73e8',f:'rgba(26,115,232,0.08)',e:'#d93025',r:'#7563B0',a:'#c55a11',b:'rgba(26,115,232,0.4)',bb:'#1a73e8',g:'rgba(0,0,0,0.05)',t:'#494949'};
 Chart.defaults.color=c.t;Chart.defaults.borderColor=c.g;
